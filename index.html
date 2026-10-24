@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mergio Studios</title>
+<meta name="description" content="Mergio Studios: giochi da fare insieme.">
+<link rel="icon" type="image/png" sizes="32x32" href="/sintonizzati/icone/favicon-32.png">
+<style>
+  @font-face { font-family: "Bricolage Grotesque"; font-weight: 400 800; src: url("/sintonizzati/fonti/bricolage-grotesque.woff") format("woff"); }
+  @font-face { font-family: "Michroma"; src: url("/sintonizzati/fonti/michroma.woff") format("woff"); }
+  :root { --fondo: #0F2A30; --testo: #E6EEEE; --tenue: #A9BDBF; --ambra: #FFB52E; --riquadro: #163A42; --bordo: rgba(155,184,182,.22); }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --fondo: #DCE4E4; --testo: #10292F; --tenue: #4A666B; --ambra: #9A5E00; --riquadro: #F7F9F8; --bordo: rgba(16,41,47,.12); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--fondo); color: var(--testo); font: 17px/1.55 "Bricolage Grotesque", system-ui, sans-serif; display: flex; flex-direction: column; }
+  main { width: 100%; max-width: 760px; margin: 0 auto; padding: 56px 16px 32px; flex: 1; }
+  h1 { font: 400 clamp(28px, 7vw, 44px)/1.1 "Michroma", Verdana, sans-serif; margin: 0 0 10px; letter-spacing: .02em; }
+  .motto { color: var(--tenue); margin: 0 0 40px; font-size: 19px; }
+  .strisce { display: grid; gap: 4px; width: 120px; margin: 0 0 18px; }
+  .strisce i { height: 4px; border-radius: 2px; background: #FFB52E; } .strisce i:nth-child(2) { background: #FF5A47; } .strisce i:nth-child(3) { background: #3FC290; }
+  h2 { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--tenue); margin: 0 0 14px; }
+  .gioco { display: flex; gap: 18px; align-items: center; padding: 18px; border-radius: 22px; background: var(--riquadro); border: 1px solid var(--bordo); color: inherit; text-decoration: none; transition: transform .15s; }
+  .gioco:hover { transform: translateY(-2px); }
+  .gioco img { width: 88px; height: 88px; border-radius: 20px; flex: none; }
+  .gioco strong { display: block; font: 400 22px/1.2 "Michroma", Verdana, sans-serif; margin-bottom: 4px; }
+  .gioco span { color: var(--tenue); }
+  .gioco em { display: inline-block; margin-top: 8px; font-style: normal; font-weight: 600; color: var(--ambra); }
+  footer { max-width: 760px; width: 100%; margin: 0 auto; padding: 16px 16px 28px; color: var(--tenue); font-size: 14px; display: flex; gap: 16px; flex-wrap: wrap; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <div class="strisce" aria-hidden="true"><i></i><i></i><i></i></div>
+  <h1>Mergio Studios</h1>
+  <p class="motto">Giochi da fare insieme, intorno a un solo telefono.</p>
+  <h2>I nostri giochi</h2>
+  <a class="gioco" href="/sintonizzati/">
+    <img src="/sintonizzati/icone/icon-192.png" alt="">
+    <div>
+      <strong>Sintonizzati</strong>
+      <span>Il party game a tema radio: siete davvero sulla stessa frequenza?</span><br>
+      <em>Gioca ora →</em>
+    </div>
+  </a>
+</main>
+<footer>
+  <span>© 2026 Mergio Studios</span>
+  <a href="/sintonizzati/privacy.html">Privacy di Sintonizzati</a>
+</footer>
+</body>
+</html>
