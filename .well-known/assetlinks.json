@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "it.mergiostudios.sintonizzati",
+      "sha256_cert_fingerprints": [
+        "99:A0:F7:DB:7B:3D:B8:A3:09:08:F6:03:6E:A2:19:10:71:D3:39:82:33:08:05:72:EF:4C:7C:C4:99:49:02:28"
+      ]
+    }
+  }
+]
