@@ -3011,8 +3011,6 @@
   #finestra-ritocco .partenza { stroke: var(--ambra); stroke-width: 3; stroke-linecap: round; opacity: .7; }
 
   /* Pannello di sinistra: soglia e giocatore bloccato */
-  .soglia-imp { font-size: clamp(13px, 3.6cqh, 16px); font-weight: 600; color: var(--tenue); padding: 1px 10px; border-radius: 999px; background: color-mix(in srgb, var(--menta) 16%, transparent); }
-  .soglia-imp b { color: var(--inchiostro); font-weight: 800; }
   .bloccato-imp { display: flex; align-items: center; gap: 6px; max-width: 100%; margin-top: 4px; padding: 3px 10px 3px 7px; border-radius: 999px;
     background: color-mix(in srgb, var(--corallo) 16%, transparent); color: var(--inchiostro); font-size: clamp(13px, 3.6cqh, 15px); font-weight: 700; }
   .bloccato-imp svg { flex: none; width: 16px; height: 16px; color: var(--corallo); }
@@ -3047,6 +3045,68 @@
   .resoconto-imp .risultati li.voto.giusto b { color: var(--menta-testo, var(--menta)); }
   .disturbatori-fine { margin: 0; padding-top: 8px; border-top: 1px dashed var(--bordo); font-weight: 600; color: var(--tenue); text-wrap: balance; }
   .disturbatori-fine b { color: var(--corallo); font-weight: 800; }
+
+  /* Ruolo segreto: il tasto si tiene premuto, si riempie, e il ruolo compare tra le interferenze */
+  #pass-ok.tieni { position: relative; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #pass-ok.tieni .carica-riempi { position: absolute; inset: 0 auto 0 0; width: calc(var(--carica, 0) * 100%); background: color-mix(in srgb, #2A1C00 22%, var(--ambra)); pointer-events: none; }
+  #pass-ok.tieni .carica-testo { position: relative; }
+  #pass-ok.tieni.caricando { transform: translateY(3px); box-shadow: 0 2px 0 var(--ambra-scura); }
+  .passaggio.rivela-ruolo .lcd { position: relative; overflow: hidden; }
+  .passaggio.rivela-ruolo .lcd::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .22) 0 2px, transparent 2px 5px);
+    mix-blend-mode: overlay; animation: ruolo-rumore 1.1s steps(9) both;
+  }
+  .passaggio.rivela-ruolo .lcd h2 { animation: ruolo-interferenza 1.1s steps(1, end) both; }
+  .passaggio.rivela-ruolo .nota { animation: ruolo-nota 1.3s ease-out both; }
+  @keyframes ruolo-interferenza {
+    0% { opacity: 0; } 8% { opacity: 1; transform: translateX(-6px) skewX(-12deg); filter: blur(2px); text-shadow: -4px 0 var(--corallo), 4px 0 var(--menta); }
+    16% { opacity: .2; transform: translateX(5px); } 24% { opacity: 1; transform: translateX(-3px) skewX(8deg); filter: blur(1px); text-shadow: 3px 0 var(--corallo), -3px 0 var(--menta); }
+    34% { opacity: .4; transform: none; } 44% { opacity: 1; transform: translateX(2px); filter: none; text-shadow: -2px 0 var(--corallo), 2px 0 var(--menta); }
+    56% { opacity: .7; transform: translateX(-1px); } 70%, 100% { opacity: 1; transform: none; filter: none; text-shadow: var(--lcd-ombra, none); }
+  }
+  @keyframes ruolo-rumore { 0% { opacity: 1; transform: translateY(0); } 50% { opacity: .8; transform: translateY(3px); } 99% { opacity: .5; } 100% { opacity: 0; } }
+  @keyframes ruolo-nota { 0%, 45% { opacity: 0; filter: blur(3px); } 60% { opacity: .5; } 70% { opacity: .2; } 100% { opacity: 1; filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .passaggio.rivela-ruolo .lcd h2, .passaggio.rivela-ruolo .nota, .passaggio.rivela-ruolo .lcd::after { animation: none; } }
+
+  /* Silenzio radio: un cartello al centro, sopra la scala; le radiocassette restano visibili */
+  .silenzio-radio {
+    grid-area: 2 / 1 / 3 / 2; z-index: 3; align-self: center; justify-self: center; width: min(520px, 100%);
+    display: grid; justify-items: center; gap: clamp(6px, 2cqh, 12px); padding: clamp(12px, 3.6cqh, 22px) 22px; text-align: center; cursor: pointer;
+    border-radius: 18px; background: var(--sfondo); box-shadow: 0 0 0 2px var(--bordo), 0 12px 40px rgba(0, 0, 0, .35);
+  }
+  .silenzio-radio[hidden] { display: none; }
+  .silenzio-radio.entra { animation: compare-su .35s ease-out both; }
+  .sr-cartello {
+    display: inline-flex; align-items: center; gap: 12px; padding: 8px 18px; border-radius: 10px; background: #2A0F0B; color: #FF6A55;
+    font: 400 clamp(17px, 6cqh, 26px)/1 "Michroma", Verdana, sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    box-shadow: 0 0 0 3px #4A1A14, 0 0 26px rgba(255, 90, 71, .45); text-shadow: 0 0 12px rgba(255, 90, 71, .8);
+  }
+  .silenzio-radio.entra .sr-cartello { animation: titolo-acceso 1.1s ease-out both; }
+  .sr-spia { width: 12px; height: 12px; border-radius: 50%; background: #FF5A47; box-shadow: 0 0 10px #FF5A47; animation: sr-lampeggia 1s steps(1) infinite; }
+  @keyframes sr-lampeggia { 50% { opacity: .25; } }
+  .sr-testo { margin: 0; font-size: clamp(13.5px, 4.2cqh, 17px); font-weight: 600; line-height: 1.35; color: var(--inchiostro); max-width: 40ch; text-wrap: balance; }
+  .sr-blocco { margin: 0; display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 999px; font-weight: 700;
+    background: color-mix(in srgb, var(--corallo) 16%, transparent); color: var(--inchiostro); }
+  .sr-blocco[hidden] { display: none; }
+  .sr-blocco svg { width: 16px; height: 16px; color: var(--corallo); flex: none; }
+  @media (prefers-reduced-motion: reduce) { .sr-spia, .silenzio-radio.entra, .silenzio-radio.entra .sr-cartello { animation: none; } }
+
+  /* Blocco: sotto ogni nome il suo ruolo nella manche; chi era bloccato prima è immune */
+  .nomi-scelta.con-ruoli .opzione-giocatore { padding: clamp(5px, 1.6cqh, 9px) 3px; }
+  .nomi-scelta.con-ruoli .og-ruolo { font-size: clamp(9px, 1.75cqw, 12px); letter-spacing: -.01em; }
+  .og-testo { display: grid; min-width: 0; text-align: center; line-height: 1.15; }
+  .og-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .og-ruolo { font: 600 clamp(10px, 3cqh, 12px)/1.15 "Bricolage Grotesque", system-ui, sans-serif; color: var(--tenue); white-space: pre-line; }
+  .opzione-giocatore[aria-pressed="true"] .og-ruolo { color: var(--inchiostro); }
+  .opzione-giocatore.immune { cursor: not-allowed; opacity: .75; border-style: dashed; background: color-mix(in srgb, var(--corallo) 8%, var(--superficie)); }
+  .opzione-giocatore.immune .og-nome { text-decoration: line-through; text-decoration-color: var(--corallo); }
+  .og-divieto { flex: none; display: grid; }
+  .og-divieto svg { width: 18px; height: 18px; color: var(--corallo); }
+  #sn-nessuno.armato { box-shadow: inset 0 0 0 2px var(--corallo); color: var(--corallo); }
+
+  /* Pannello: punti e obiettivo */
+  .impostore-box .obiettivo-imp { font-size: .42em; font-weight: 700; color: var(--tenue); margin-left: 2px; }
 </style>
 </head>
 <body>
@@ -3759,6 +3819,12 @@ Capriccio | Bisogno
         <p class="sopra" id="scelta-sopra"></p>
         <div class="scelta-opzioni" id="scelta-opzioni"></div>
         <button class="tasto-ambra" id="scelta-ok" disabled>Sintonizza</button>
+      </div>
+      <!-- Impostore: dopo l'indizio, l'avviso di silenzio radio -->
+      <div class="silenzio-radio" id="silenzio-radio" hidden role="status">
+        <div class="sr-cartello"><span class="sr-spia" aria-hidden="true"></span><span class="sr-titolo">Silenzio radio</span></div>
+        <p class="sr-testo" id="sr-testo"></p>
+        <p class="sr-blocco" id="sr-blocco" hidden></p>
       </div>
       <!-- Impostore: Blocco e votazioni, si tocca un nome -->
       <div class="scelta-radio scelta-nome" id="scelta-nome" hidden>
@@ -5882,12 +5948,12 @@ Capriccio | Bisogno
     impostore: { titolo: 'Impostore', passi: [
       '<b>Operatori contro Disturbatori.</b> Si gioca da 5 a 10, seduti in cerchio: all’inizio ognuno scopre in segreto il suo ruolo. Con 5, 6 o 7 giocatori c’è un Disturbatore, con 8, 9 o 10 ce ne sono due, che si conoscono. Gli Operatori vogliono fare punti; i Disturbatori vogliono farli sbagliare senza farsi scoprire.',
       '<b>Una manche a testa.</b> A ogni manche il telefono passa in senso orario a un nuovo Conduttore: solo lui guarda la frequenza nascosta e dice un indizio ad alta voce. Può cambiare le radiocassette fino a due volte. Anche un Disturbatore può essere Conduttore, e dare l’indizio che vuole.',
-      '<b>Il Blocco.</b> Dalla seconda manche il Conduttore può bloccare un giocatore (o nessuno): per quella manche il bloccato non tocca la lancetta, ma può votare. Tutti sanno chi è bloccato, nessuno sa se è un Operatore o un Disturbatore.',
+      '<b>Il Blocco.</b> Dalla seconda manche il Conduttore può bloccare un giocatore (o nessuno): per quella manche il bloccato non tocca la lancetta, ma può votare. Tutti sanno chi è bloccato, nessuno sa se è un Operatore o un Disturbatore. Chi è stato bloccato non può esserlo di nuovo nella manche successiva.',
       '<b>Silenzio radio.</b> Dopo l’indizio nessuno parla fino alla rivelazione. I primi giocatori dopo il Conduttore sono i <b>Cercafrequenze</b> (2 con 5–6 giocatori, 3 con 7–8, 4 con 9–10): uno alla volta, di nascosto, mettono la lancetta dove pensano che sia la frequenza; la radio fa la media delle loro posizioni.',
       '<b>Gli altri sono i Sintonizzatori:</b> uno alla volta ritoccano la lancetta, ognuno dentro la sua finestra, che si stringe a ogni passaggio (per esempio ±14% e poi ±7%). Si può anche lasciarla dov’è.',
-      '<b>Si rivela la frequenza nascosta</b> e il gruppo prende da 0 a 5 punti, con lo stesso segnale delle altre modalità. Ora si parla: perché la lancetta è finita proprio lì?',
+      '<b>Si rivela la frequenza nascosta</b> e il gruppo prende da 0 a 5 punti, con lo stesso segnale delle altre modalità. Ora si parla: perché la lancetta è finita proprio lì? I Cercafrequenze però non possono mai dire dove avevano messo la loro lancetta.',
       '<b>Le votazioni si fanno dal vivo.</b> Dopo alcune manche (la radio vi dice quando) indicate insieme un sospettato e registratelo sul telefono; se siete pari, decide il Conduttore della manche appena finita. Un voto giusto vale +1, uno sbagliato −1; il voto finale, dopo l’ultima manche, vale +2 o −2. Con due Disturbatori basta indovinarne uno. L’esito resta segreto fino alla fine.',
-      '<b>A fine partita</b> si sommano i punti delle manche e quelli dei voti: se il gruppo arriva alla soglia vincono gli Operatori, altrimenti vincono i Disturbatori. Soglie: 8 punti in 5, 12 in 6, 13 in 7, 14 in 8, 17 in 9, 20 in 10.'
+      '<b>A fine partita</b> si sommano i punti delle manche e quelli dei voti: se il gruppo raggiunge l’obiettivo vincono gli Operatori, altrimenti vincono i Disturbatori. Obiettivo: 8 punti in 5, 12 in 6, 13 in 7, 14 in 8, 17 in 9, 20 in 10.'
     ] }
   };
   let regoleDa = null;
@@ -6252,7 +6318,7 @@ Capriccio | Bisogno
     passi: [
       { titolo: 'Ruoli segreti', disegno: 'ruoli', testo: 'Operatori contro Disturbatori: i ruoli sono segreti.' },
       { titolo: 'In silenzio', disegno: 'segreto', testo: 'Dopo l\u2019indizio, in silenzio, muovete la lancetta.' },
-      { titolo: 'Soglia', disegno: 'soglia', testo: 'Votate i sospetti e arrivate alla soglia.' }
+      { titolo: 'Obiettivo', disegno: 'soglia', testo: 'Votate i sospetti e raggiungete l\u2019obiettivo.' }
     ],
     regole: []
   };
@@ -7315,6 +7381,7 @@ Capriccio | Bisogno
     passaggio.hidden = true;
     document.getElementById('scelta-radio').hidden = true;
     sceltaNome.hidden = true;
+    silenzioRadio.hidden = true;
     limitaSintonia(null);
     schermataGioco.classList.remove('accensione');
     transizioneLancetta('');
@@ -7437,6 +7504,10 @@ Capriccio | Bisogno
       passAvviso.append(o.avviso);
     }
     passOk.textContent = o.bottone;
+    passaggio.classList.toggle('rivela-ruolo', !!o.ruolo);
+    passOk.classList.toggle('tieni', !!o.tieni);
+    passOk.style.removeProperty('--carica');
+    if (o.tieni) { passOk.replaceChildren(el('span', 'carica-riempi'), el('span', 'carica-testo', o.bottone)); }
     dopoPassaggio = poi;
     passaggio.hidden = false;
     // dopo un cambio di stazione il tasto resta spento finché la radio non si aggancia: tutti vedono e sentono dove si gioca
@@ -7450,12 +7521,46 @@ Capriccio | Bisogno
     if (!appena) vibra(segnale);
   }
   passOk.addEventListener('click', () => {
+    if (passOk.classList.contains('tieni')) return;       // questo tasto si tiene premuto
+    chiudiPassaggio();
+  });
+  // Tasto da tenere premuto (circa 2 secondi): evita che un tocco per sbaglio mostri il ruolo segreto
+  const DURATA_TIENI = 1800;
+  let tieniDa = 0, tieniRaf = 0;
+  function lasciaTieni() {
+    if (!tieniDa) return;
+    tieniDa = 0; cancelAnimationFrame(tieniRaf);
+    passOk.classList.remove('caricando');
+    passOk.style.setProperty('--carica', 0);
+  }
+  function caricaTieni(t) {
+    if (!tieniDa) return;
+    const k = Math.min(1, (t - tieniDa) / DURATA_TIENI);
+    passOk.style.setProperty('--carica', k.toFixed(3));
+    if (k < 1) { tieniRaf = requestAnimationFrame(caricaTieni); return; }
+    tieniDa = 0; passOk.classList.remove('caricando');
+    vibra('trovato');
+    chiudiPassaggio();
+  }
+  function iniziaTieni() {
+    if (!passOk.classList.contains('tieni') || passOk.disabled || tieniDa) return;
+    tieniDa = performance.now();
+    passOk.classList.add('caricando');
+    suona('scansione'); vibra('tocco');
+    tieniRaf = requestAnimationFrame(caricaTieni);
+  }
+  passOk.addEventListener('pointerdown', e => { if (passOk.classList.contains('tieni')) { e.preventDefault(); try { passOk.setPointerCapture(e.pointerId); } catch (x) {} iniziaTieni(); } });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => passOk.addEventListener(t, lasciaTieni));
+  passOk.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && passOk.classList.contains('tieni')) { e.preventDefault(); if (!e.repeat) iniziaTieni(); } });
+  passOk.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') lasciaTieni(); });
+  passOk.addEventListener('contextmenu', e => { if (passOk.classList.contains('tieni')) e.preventDefault(); });
+  function chiudiPassaggio() {
     passaggio.hidden = true;
     clearTimeout(suonoPassaggio); timers.delete(suonoPassaggio);
     if (musicaAlta) { musicaAlta = false; aggiornaMusica(); }   // inizia il turno: la musica torna un sottofondo
     const poi = dopoPassaggio; dopoPassaggio = null;
     if (poi) poi();
-  });
+  }
 
   /* ---------- Entrata in partita: la radio si accende ---------- */
   // in alto "Sintonizzati su [stazione]", sulla targhetta la tematica, sulla scala AM/kHz o FM/MHz (e il teschio
@@ -7481,6 +7586,7 @@ Capriccio | Bisogno
   }
   function entraInPartita(poi) {
     musicaAlta = false;
+    cartaMostrata = '';
     mostraInOndaInGioco(stazioneDiPartita(), !!(partita && partita.zap));   // con lo zapping il nome si aggancia tremolando
     passaggio.hidden = true;
     pulisciQuadrante();
@@ -8151,7 +8257,7 @@ Capriccio | Bisogno
      Il gruppo prende da 0 a 5 punti con il segnale Standard. Le votazioni si fanno dal vivo e l'esito
      resta segreto: alla fine, punti delle manche + voti ≥ soglia → vincono gli Operatori.
      ===================================================================== */
-  const SOGLIE_IMPOSTORE = { 5: 8, 6: 12, 7: 13, 8: 14, 9: 17, 10: 20 };            // provvisorie: da verificare con partite vere
+  const SOGLIE_IMPOSTORE = { 5: 8, 6: 12, 7: 13, 8: 14, 9: 17, 10: 20 };            // obiettivo (provvisorio): da verificare con partite vere
   const CERCATORI_IMPOSTORE = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 4, 10: 4 };
   // di quanto può spostare la lancetta ogni Sintonizzatore (in punti della scala, cioè in %), nell'ordine
   const FINESTRE_IMPOSTORE = { 5: [14, 7], 6: [14, 7, 3.5], 7: [20, 10, 5], 8: [20, 10, 5, 2.5], 9: [20, 10, 5, 2.5], 10: [20, 10, 5, 2.5, 2.5] };
@@ -8182,24 +8288,24 @@ Capriccio | Bisogno
     p.fase = 'ruoli'; limitaSintonia(null); pulisciQuadrante(); aggiorna();
     chiediPassaggio({
       sopra: 'Prima di iniziare, ognuno scopre in segreto il suo ruolo', nome: 'Ruoli segreti', bottone: 'Iniziamo',
-      nota: p.disturbatori.length > 1 ? 'Tra voi si nascondono due Disturbatori' : 'Tra voi si nasconde un Disturbatore'
+      nota: p.disturbatori.length > 1 ? 'Tra voi si nascondono due Disturbatori' : 'Tra voi si nasconde un solo Disturbatore'
     }, () => mostraRuolo(0));
   }
   function mostraRuolo(k) {
     const p = partita, nome = nomeDi(k);
-    chiediPassaggio({ sopra: `Ruolo ${k + 1} di ${p.giocatori.length} · passa il telefono a`, nome, bottone: 'Mostra il mio ruolo', nota: 'Gli altri non devono vedere lo schermo' }, () => {
+    chiediPassaggio({ sopra: `Ruolo ${k + 1} di ${p.giocatori.length}`, nome, bottone: 'Tieni premuto per il tuo ruolo', tieni: true, nota: 'Gli altri non devono vedere lo schermo' }, () => {
       const disturba = p.disturbatori.includes(k);
       const complice = p.disturbatori.filter(i => i !== k).map(nomeDi)[0];
       chiediPassaggio({
-        sopra: `${nome}, sei un`, nome: disturba ? 'Disturbatore' : 'Operatore', bottone: 'Nascondi', suono: 'apriBersaglio',
-        nota: disturba ? (complice ? `Il tuo complice è ${complice}: fate sbagliare il gruppo senza farvi scoprire.` : 'Fai sbagliare il gruppo senza farti scoprire.')
-          : 'Aiuta il gruppo a trovare le frequenze e scopri chi le disturba.'
+        sopra: `${nome}, sei un`, nome: disturba ? 'Disturbatore' : 'Operatore', bottone: 'Nascondi', suono: 'apriBersaglio', ruolo: true,
+        nota: disturba ? 'Disturba il segnale senza dare troppo nell\u2019occhio.' + (complice ? ` Il tuo complice è ${complice}.` : '')
+          : 'Aiuta il gruppo a identificare la frequenza nascosta.'
       }, () => {
         suona('nascondi');
         if (k + 1 < p.giocatori.length) mostraRuolo(k + 1);
         else {
           p.ruoliVisti = true;
-          chiediPassaggio({ sopra: 'Tutti conoscono il proprio ruolo', nome: 'Si parte!', bottone: 'Chi è il primo Conduttore?', nota: 'Mettete il telefono dove lo vedono tutti' },
+          chiediPassaggio({ sopra: 'Tutti conoscono il proprio ruolo', nome: 'Si parte!', bottone: 'Chi sarà il primo Conduttore?', nota: 'Mettete il telefono dove lo vedono tutti' },
             () => estrai(p.giocatori.map(g => g.nome), p.conduttore, mancheImpostore));
         }
       });
@@ -8211,6 +8317,7 @@ Capriccio | Bisogno
     const p = partita, n = p.giocatori.length;
     prendiCarta(p);
     p.centro = nuovoCentro('standard');
+    p.immune = p.manche > 1 ? (p.bloccato ?? null) : null;      // bloccato nella manche prima: questa volta non si può bloccare
     p.bloccato = null; p.bloccoDetto = false; p.posizioni = []; p.lancetta = null; p.azioni = []; p.passo = 0; p.esito = null;
     p.cambiRimasti = CAMBI_PER_TURNO;
     // in senso orario dopo il Conduttore: prima i Cercafrequenze, poi i Sintonizzatori
@@ -8221,7 +8328,7 @@ Capriccio | Bisogno
     limitaSintonia(null); pulisciQuadrante(); aggiorna();
     const chi = nomeDi(p.conduttore);
     chiediPassaggio({
-      sopra: `Manche ${p.manche} di ${p.totale} · passa il telefono al Conduttore`, nome: chi, bottone: `Sono ${chi}`,
+      sopra: `Manche ${p.manche} di ${p.totale} · Conduttore`, nome: chi, bottone: `Sono ${chi}`,
       nota: 'Solo il Conduttore guarda lo schermo', inOnda: true, suono: p.manche > 1 ? 'cambioCapo' : 'passaggio'
     }, () => { p.fase = 'segreto'; disegnaVentaglio(p.centro, 'standard'); aggiorna(); apriVentaglio(); });
   }
@@ -8236,10 +8343,13 @@ Capriccio | Bisogno
   // il Blocco: il Conduttore lo decide da solo, sul telefono; poi diventa pubblico
   function chiediBlocco() {
     const p = partita;
+    const n = p.giocatori.length, ruoloDi = {};
+    p.cercatori.forEach((i, k) => { ruoloDi[i] = `${k + 1}°\u00a0Cercafrequenze`; });
+    p.sintonizzatori.forEach((i, k) => { ruoloDi[i] = `${k + 1}°\u00a0Sintonizzatore\n±${percento(FINESTRE_IMPOSTORE[n][k])}%`; });
     scegliNome({
       sopra: 'Blocco', titolo: 'Vuoi bloccare qualcuno?',
-      nota: 'In questa manche il bloccato non tocca la lancetta (ma vota). Tutti sapranno chi è, non il suo ruolo.',
-      nomi: p.giocatori.map((_, i) => i).filter(i => i !== p.conduttore), conferma: 'Blocca', nessuno: 'Non bloccare nessuno'
+      nota: 'In questa manche il giocatore bloccato non tocca la lancetta. Questa è un\u2019informazione pubblica.',
+      nomi: [...p.cercatori, ...p.sintonizzatori], ruoli: ruoloDi, immune: p.immune, conferma: 'Blocca', nessuno: 'Non bloccare nessuno'
     }, scelto => { p.bloccato = scelto; suona(scelto == null ? 'tacca' : 'nascondi'); indizioImpostore(); });
   }
   // davanti a tutti: le radiocassette, chi è bloccato, e il Conduttore dice l'indizio
@@ -8251,21 +8361,39 @@ Capriccio | Bisogno
       ...p.sintonizzatori.map((chi, j) => ({ chi, tipo: 'ritocco', limite: FINESTRE_IMPOSTORE[n][j], ordine: j + 1 }))].filter(a => a.chi !== p.bloccato);
     p.passo = 0;
     p.fase = 'indizio'; aggiorna();
-    if (p.bloccato != null) { suona('passaggio'); vibra('passaggio'); }
+    avvisoSilenzio(p, prossimaAzione);
+  }
+  // l'avviso al centro: "Silenzio radio", chi dice l'indizio e l'eventuale blocco; poi tocca al primo giocatore
+  const silenzioRadio = document.getElementById('silenzio-radio');
+  function avvisoSilenzio(p, poi) {
+    document.getElementById('sr-testo').textContent = `${nomeDi(p.conduttore)} dice l\u2019indizio ad alta voce: da adesso nessuno parla fino alla rivelazione.`;
+    const blocco = document.getElementById('sr-blocco');
+    blocco.hidden = p.bloccato == null;
+    if (p.bloccato != null) { blocco.innerHTML = ICONA_BLOCCO; blocco.append(el('span', '', `Blocco su ${nomeDi(p.bloccato)}`)); }
+    silenzioRadio.hidden = false;
+    silenzioRadio.classList.remove('entra'); void silenzioRadio.offsetWidth; silenzioRadio.classList.add('entra');
+    suona('nascondi'); vibra('passaggio');
+    let fatto = false;
+    const avanti = () => { if (fatto) return; fatto = true; silenzioRadio.hidden = true; silenzioRadio.onclick = null; poi(); };
+    silenzioRadio.onclick = () => { if (performance.now() - aperto > 900) avanti(); };
+    const aperto = performance.now();
+    dopo(riduciMoto ? 2500 : 4200, avanti);
   }
   function prossimaAzione() {
     const p = partita, a = p.azioni[p.passo];
     p.fase = 'attesa'; limitaSintonia(null); aggiorna();
     if (!a) {
-      chiediPassaggio({ sopra: 'Tutti hanno sintonizzato la radio', nome: 'Pronti?', bottone: 'Rivela la frequenza nascosta', nota: 'Mettete il telefono dove lo vedono tutti' }, rivelaImpostore);
+      chiediPassaggio({ sopra: 'Tutti hanno sintonizzato la radio', nome: 'Pronti?', bottone: 'Rivela la frequenza nascosta',
+        nota: 'Mettete il telefono dove lo vedono tutti. Nella discussione i Cercafrequenze non possono mai dire dove avevano messo la lancetta.' }, rivelaImpostore);
       return;
     }
     // finiti i Cercafrequenze, la lancetta va sulla media delle loro posizioni
     if (a.tipo === 'ritocco' && p.lancetta == null) p.lancetta = media(p.posizioni);
     const nome = nomeDi(a.chi), cerca = a.tipo === 'cerca';
     chiediPassaggio({
-      sopra: (cerca ? 'Cercafrequenze' : 'Sintonizzatore') + ' · passa il telefono a', nome, bottone: `Sono ${nome}`,
-      nota: cerca ? 'In silenzio. Gli altri non devono vedere lo schermo' : `In silenzio. Potrai spostare la lancetta di ±${percento(a.limite)}%`
+      sopra: cerca ? `${cercatoreN(p, a)}° Cercafrequenze` : `${a.ordine}° Sintonizzatore`, nome, bottone: `Sono ${nome}`,
+      nota: cerca ? 'Metti la lancetta dove pensi che sia la frequenza nascosta: nessuno vedrà dove. La radio farà la media.'
+        : `Correggi la lancetta che ti arriva: puoi spostarla di ±${percento(a.limite)}%, o lasciarla dov\u2019è.`
     }, () => {
       p.fase = 'tentativo';
       if (cerca) { limitaSintonia(null); impostaSintonia(50); }
@@ -8273,6 +8401,7 @@ Capriccio | Bisogno
       aggiorna();
     });
   }
+  const cercatoreN = (p, a) => p.cercatori.indexOf(a.chi) + 1;
   function confermaImpostore() {
     const p = partita, a = p.azioni[p.passo];
     suona('conferma'); vibra('conferma');
@@ -8339,11 +8468,22 @@ Capriccio | Bisogno
     const griglia = document.getElementById('sn-nomi'), ok = document.getElementById('sn-ok'), nessuno = document.getElementById('sn-nessuno');
     griglia.classList.toggle('molti', o.nomi.length > 6);
     griglia.classList.toggle('pochi', o.nomi.length <= 4);
+    griglia.classList.toggle('con-ruoli', !!o.ruoli);
     griglia.replaceChildren(...o.nomi.map(i => {
       const b = el('button', 'opzione-giocatore');
       b.type = 'button';
       b.setAttribute('aria-pressed', 'false');
-      b.append(el('i', 'num', i + 1), el('span', '', nomeDi(i)));
+      if (o.ruoli) {
+        const testo = el('span', 'og-testo');
+        testo.append(el('span', 'og-nome', nomeDi(i)), el('small', 'og-ruolo', i === o.immune ? 'Immune in questa manche' : o.ruoli[i]));
+        b.append(testo);
+      } else b.append(el('i', 'num', i + 1), el('span', '', nomeDi(i)));
+      if (i === o.immune) {
+        b.disabled = true; b.classList.add('immune');
+        const divieto = el('span', 'og-divieto'); divieto.innerHTML = ICONA_BLOCCO; b.prepend(divieto);
+        b.setAttribute('aria-label', `${nomeDi(i)}: non si può bloccare, era bloccato nella manche prima`);
+        return b;
+      }
       b.addEventListener('click', () => {
         scelto = i;
         griglia.querySelectorAll('.opzione-giocatore').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -8354,9 +8494,21 @@ Capriccio | Bisogno
     }));
     ok.textContent = o.conferma; ok.disabled = true;
     nessuno.hidden = !o.nessuno; nessuno.textContent = o.nessuno || '';
-    const chiudi = v => { sceltaNome.hidden = true; poi(v); };
+    nessuno.classList.remove('armato');
+    const chiudi = v => { sceltaNome.hidden = true; clearTimeout(nessunoScade); poi(v); };
     ok.onclick = () => { if (scelto != null) chiudi(scelto); };
-    nessuno.onclick = () => chiudi(null);
+    // "Non bloccare nessuno" chiede conferma: primo tocco "Sicuro?", secondo tocco conferma
+    let armato = 0, nessunoScade = 0;
+    nessuno.onclick = () => {
+      const ora = performance.now();
+      if (!armato) {
+        armato = ora; nessuno.classList.add('armato'); nessuno.textContent = 'Sicuro? Tocca di nuovo'; vibra('conferma');
+        nessunoScade = setTimeout(() => { armato = 0; nessuno.classList.remove('armato'); nessuno.textContent = o.nessuno || ''; }, 3000);
+        return;
+      }
+      if (ora - armato < 330) return;
+      chiudi(null);
+    };
     sceltaNome.hidden = false;
     suona('finestra');
   }
@@ -8365,10 +8517,11 @@ Capriccio | Bisogno
   function disegnaImpostore() {
     const p = partita, box = el('div', 'collab-box impostore-box');
     box.append(el('div', 'etichetta', 'Punti'));
-    box.append(el('b', 'totale' + (p.fase === 'rivelazione' && p.esito && p.esito.punti ? ' segnato' : ''), p.punti));
-    const soglia = el('div', 'soglia-imp');
-    soglia.append('Soglia ', el('b', '', p.soglia));
-    box.append(soglia, el('div', 'etichetta', `Manche ${p.manche}/${p.totale}`));
+    // i punti fatti e, piccolo accanto, l'obiettivo da raggiungere
+    const totale = el('b', 'totale' + (p.fase === 'rivelazione' && p.esito && p.esito.punti ? ' segnato' : ''), p.punti);
+    totale.append(el('small', 'obiettivo-imp', `/${p.soglia}`));
+    totale.setAttribute('aria-label', `${p.punti} punti, obiettivo ${p.soglia}`);
+    box.append(totale, el('div', 'etichetta', `Manche ${p.manche}/${p.totale}`));
     const pallini = el('div', 'pallini');
     for (let i = 1; i <= p.totale; i++) {
       const pal = el('i');
@@ -8396,28 +8549,28 @@ Capriccio | Bisogno
       box.append(el('div', 'etichetta', quale), el('div', 'chi ruolo-collab', 'Conduttore'),
         el('div', 'ruolo', 'Trova un indizio che porti al centro della frequenza nascosta'), bottoneSicuro('Nascondi', nascondiImpostore));
     } else if (p.fase === 'indizio') {
-      box.append(el('div', 'etichetta', 'Conduttore'), el('div', 'chi', nomeDi(p.conduttore)),
-        el('div', 'ruolo esito', p.bloccato != null ? `Blocco su ${nomeDi(p.bloccato)}. Indizio, poi silenzio radio.` : 'Indizio ad alta voce, poi silenzio radio.'),
-        bottone('Indizio detto', prossimaAzione));
+      box.append(el('div', 'etichetta', 'Conduttore'), el('div', 'chi', nomeDi(p.conduttore)));
     } else if (p.fase === 'tentativo') {
       const a = p.azioni[p.passo], cerca = a.tipo === 'cerca';
-      box.append(el('div', 'etichetta', cerca ? 'Cercafrequenze' : `Sintonizzatore · ±${percento(a.limite)}%`), el('div', 'chi', nomeDi(a.chi)),
+      box.append(el('div', 'etichetta', cerca ? `${cercatoreN(p, a)}° Cercafrequenze` : `${a.ordine}° Sintonizzatore · ±${percento(a.limite)}%`), el('div', 'chi', nomeDi(a.chi)),
         el('div', 'ruolo', cerca ? 'Metti la lancetta sul centro della frequenza nascosta' : 'Ritocca la lancetta dentro la finestra, o lasciala dov’è'),
         bottoneSicuro('Conferma', confermaImpostore));
     } else if (p.fase === 'rivelazione') {
       const e = p.esito;
       box.append(el('div', 'etichetta', 'Risultato'), el('div', 'guadagno' + (e.punti ? '' : ' zero'), e.punti ? `+${e.punti}` : '0'),
-        el('div', 'ruolo esito', 'Ora potete parlare: perché la lancetta è finita lì?'),
+        el('div', 'ruolo esito', 'Ora parlate: perché la lancetta è finita lì?'),
         bottone(p.votoOra === 'finale' ? 'Votazione finale' : p.votoOra ? 'Votazione' : 'Prossima manche', dopoRivelazione));
     }
     latoDx.append(box);
   }
 
   /* ---------- Disegno dei pannelli ---------- */
+  let cartaMostrata = '';
   function aggiorna() {
     const p = partita;
     if (!p) return;
-    if (p.carta) mostraCarta(p.carta);
+    // le radiocassette si "infilano" solo quando cambiano, non a ogni aggiornamento (es. durante l'estrazione)
+    if (p.carta && p.carta.join('|') !== cartaMostrata) { cartaMostrata = p.carta.join('|'); mostraCarta(p.carta); }
     const cambiRimasti = p.cambiRimasti ?? 0;
     mescola.disabled = p.fase !== 'segreto' || cambiRimasti <= 0;
     mescola.style.visibility = '';
