@@ -3071,7 +3071,7 @@
 
   /* Silenzio radio: un cartello al centro, sopra la scala; le radiocassette restano visibili */
   .silenzio-radio {
-    grid-area: 2 / 1 / 3 / 2; z-index: 3; align-self: center; justify-self: center; width: min(520px, 100%);
+    grid-area: 2 / 1 / 3 / 2; z-index: 3; align-self: center; justify-self: center; width: min(460px, 100%);
     display: grid; justify-items: center; gap: clamp(6px, 2cqh, 12px); padding: clamp(12px, 3.6cqh, 22px) 22px; text-align: center; cursor: pointer;
     border-radius: 18px; background: var(--sfondo); box-shadow: 0 0 0 2px var(--bordo), 0 12px 40px rgba(0, 0, 0, .35);
   }
@@ -3107,6 +3107,10 @@
 
   /* Pannello: punti e obiettivo */
   .impostore-box .obiettivo-imp { font-size: .42em; font-weight: 700; color: var(--tenue); margin-left: 2px; }
+
+  .passaggio.rivela-ruolo .nota { white-space: pre-line; }
+  .silenzio-radio.in-onda .sr-cartello { background: #0B2A1E; color: #4FD69E; box-shadow: 0 0 0 3px #14432F, 0 0 26px rgba(79, 214, 158, .45); text-shadow: 0 0 12px rgba(79, 214, 158, .8); }
+  .silenzio-radio.in-onda .sr-spia { background: #4FD69E; box-shadow: 0 0 10px #4FD69E; }
 </style>
 </head>
 <body>
@@ -3822,7 +3826,7 @@ Capriccio | Bisogno
       </div>
       <!-- Impostore: dopo l'indizio, l'avviso di silenzio radio -->
       <div class="silenzio-radio" id="silenzio-radio" hidden role="status">
-        <div class="sr-cartello"><span class="sr-spia" aria-hidden="true"></span><span class="sr-titolo">Silenzio radio</span></div>
+        <div class="sr-cartello"><span class="sr-spia" aria-hidden="true"></span><span class="sr-titolo" id="sr-titolo">Silenzio radio</span></div>
         <p class="sr-testo" id="sr-testo"></p>
         <p class="sr-blocco" id="sr-blocco" hidden></p>
       </div>
@@ -8298,8 +8302,8 @@ Capriccio | Bisogno
       const complice = p.disturbatori.filter(i => i !== k).map(nomeDi)[0];
       chiediPassaggio({
         sopra: `${nome}, sei un`, nome: disturba ? 'Disturbatore' : 'Operatore', bottone: 'Nascondi', suono: 'apriBersaglio', ruolo: true,
-        nota: disturba ? 'Disturba il segnale senza dare troppo nell\u2019occhio.' + (complice ? ` Il tuo complice è ${complice}.` : '')
-          : 'Aiuta il gruppo a identificare la frequenza nascosta.'
+        nota: disturba ? 'Disturba il segnale senza dare troppo nell\u2019occhio' + (complice ? `\nIl tuo complice è ${complice}` : '')
+          : 'Aiuta il gruppo a identificare la frequenza nascosta'
       }, () => {
         suona('nascondi');
         if (k + 1 < p.giocatori.length) mostraRuolo(k + 1);
@@ -8345,7 +8349,7 @@ Capriccio | Bisogno
     const p = partita;
     const n = p.giocatori.length, ruoloDi = {};
     p.cercatori.forEach((i, k) => { ruoloDi[i] = `${k + 1}°\u00a0Cercafrequenze`; });
-    p.sintonizzatori.forEach((i, k) => { ruoloDi[i] = `${k + 1}°\u00a0Sintonizzatore\n±${percento(FINESTRE_IMPOSTORE[n][k])}%`; });
+    p.sintonizzatori.forEach((i, k) => { ruoloDi[i] = `${k + 1}°\u00a0Sintonizzatore`; });
     scegliNome({
       sopra: 'Blocco', titolo: 'Vuoi bloccare qualcuno?',
       nota: 'In questa manche il giocatore bloccato non tocca la lancetta. Questa è un\u2019informazione pubblica.',
@@ -8366,25 +8370,43 @@ Capriccio | Bisogno
   // l'avviso al centro: "Silenzio radio", chi dice l'indizio e l'eventuale blocco; poi tocca al primo giocatore
   const silenzioRadio = document.getElementById('silenzio-radio');
   function avvisoSilenzio(p, poi) {
-    document.getElementById('sr-testo').textContent = `${nomeDi(p.conduttore)} dice l\u2019indizio ad alta voce: da adesso nessuno parla fino alla rivelazione.`;
+    avvisoCentrale({ titolo: 'Silenzio radio', testo: `${nomeDi(p.conduttore)} dice l\u2019indizio ad alta voce: da adesso nessuno parla fino alla rivelazione.`,
+      blocco: p.bloccato != null ? `Blocco su ${nomeDi(p.bloccato)}` : null, durata: 4200, suono: 'nascondi' }, poi);
+  }
+  // dopo la rivelazione: si torna a parlare, ma i Cercafrequenze non dicono dove avevano messo la lancetta
+  function avvisoInOnda() {
+    if (!partita || partita.fase !== 'rivelazione') return;
+    avvisoCentrale({ titolo: 'In onda', tipo: 'in-onda', testo: 'Si torna a parlare: discutete assieme! I Cercafrequenze però non possono rivelare dove avevano messo la loro lancetta.', durata: 6500 });
+  }
+  let avvisoAttivo = 0;
+  function avvisoCentrale(o, poi) {
+    const id = ++avvisoAttivo;
+    document.getElementById('sr-titolo').textContent = o.titolo;
+    document.getElementById('sr-testo').textContent = o.testo;
+    silenzioRadio.classList.toggle('in-onda', o.tipo === 'in-onda');
     const blocco = document.getElementById('sr-blocco');
-    blocco.hidden = p.bloccato == null;
-    if (p.bloccato != null) { blocco.innerHTML = ICONA_BLOCCO; blocco.append(el('span', '', `Blocco su ${nomeDi(p.bloccato)}`)); }
+    blocco.hidden = !o.blocco;
+    if (o.blocco) { blocco.innerHTML = ICONA_BLOCCO; blocco.append(el('span', '', o.blocco)); }
     silenzioRadio.hidden = false;
     silenzioRadio.classList.remove('entra'); void silenzioRadio.offsetWidth; silenzioRadio.classList.add('entra');
-    suona('nascondi'); vibra('passaggio');
-    let fatto = false;
-    const avanti = () => { if (fatto) return; fatto = true; silenzioRadio.hidden = true; silenzioRadio.onclick = null; poi(); };
-    silenzioRadio.onclick = () => { if (performance.now() - aperto > 900) avanti(); };
+    if (o.suono) suona(o.suono);
+    vibra('passaggio');
     const aperto = performance.now();
-    dopo(riduciMoto ? 2500 : 4200, avanti);
+    let fatto = false;
+    const avanti = () => {
+      if (fatto) return; fatto = true;
+      if (id === avvisoAttivo) { silenzioRadio.hidden = true; silenzioRadio.onclick = null; }   // un avviso vecchio non chiude quello nuovo
+      if (poi) poi();
+    };
+    silenzioRadio.onclick = () => { if (performance.now() - aperto > 900) avanti(); };
+    dopo(riduciMoto ? 2500 : o.durata, avanti);
   }
   function prossimaAzione() {
     const p = partita, a = p.azioni[p.passo];
     p.fase = 'attesa'; limitaSintonia(null); aggiorna();
     if (!a) {
       chiediPassaggio({ sopra: 'Tutti hanno sintonizzato la radio', nome: 'Pronti?', bottone: 'Rivela la frequenza nascosta',
-        nota: 'Mettete il telefono dove lo vedono tutti. Nella discussione i Cercafrequenze non possono mai dire dove avevano messo la lancetta.' }, rivelaImpostore);
+        nota: 'Mettete il telefono dove lo vedono tutti' }, rivelaImpostore);
       return;
     }
     // finiti i Cercafrequenze, la lancetta va sulla media delle loro posizioni
@@ -8392,8 +8414,11 @@ Capriccio | Bisogno
     const nome = nomeDi(a.chi), cerca = a.tipo === 'cerca';
     chiediPassaggio({
       sopra: cerca ? `${cercatoreN(p, a)}° Cercafrequenze` : `${a.ordine}° Sintonizzatore`, nome, bottone: `Sono ${nome}`,
-      nota: cerca ? 'Metti la lancetta dove pensi che sia la frequenza nascosta: nessuno vedrà dove. La radio farà la media.'
-        : `Correggi la lancetta che ti arriva: puoi spostarla di ±${percento(a.limite)}%, o lasciarla dov\u2019è.`
+      nota: cerca ? 'Posiziona la lancetta, nessuno vedrà la sua posizione. La radio farà la media tra i diversi Cercafrequenze.'
+        : a.ordine === 1 ? 'I Cercafrequenze hanno individuato una zona. Se vuoi puoi correggere di molto la posizione della lancetta.'
+        // caso raro: il 1° Sintonizzatore è bloccato, quindi il 2° è il primo a ricevere la lancetta dai Cercafrequenze
+        : p.azioni.find(x => x.tipo === 'ritocco') === a ? 'I Cercafrequenze hanno individuato una zona. Se vuoi puoi correggere la posizione della lancetta.'
+        : 'Puoi correggere lievemente la lancetta che ti arriva, oppure lasciarla dov\u2019è.'
     }, () => {
       p.fase = 'tentativo';
       if (cerca) { limitaSintonia(null); impostaSintonia(50); }
@@ -8426,8 +8451,10 @@ Capriccio | Bisogno
     disegnaVentaglio(p.centro, 'standard'); aggiorna(); apriVentaglio();
     suona('esito', { punti, centro: punti === 5, t: 0.45 });
     if (punti === 5) dopo(450, () => vibra('centro'));
+    dopo(riduciMoto ? 600 : 1800, avvisoInOnda);
   }
   function dopoRivelazione() {
+    avvisoAttivo++; silenzioRadio.hidden = true; silenzioRadio.onclick = null;
     if (partita.votoOra) votazioneImpostore(); else prossimaMancheImpostore();
   }
   function prossimaMancheImpostore() {
@@ -8558,7 +8585,6 @@ Capriccio | Bisogno
     } else if (p.fase === 'rivelazione') {
       const e = p.esito;
       box.append(el('div', 'etichetta', 'Risultato'), el('div', 'guadagno' + (e.punti ? '' : ' zero'), e.punti ? `+${e.punti}` : '0'),
-        el('div', 'ruolo esito', 'Ora parlate: perché la lancetta è finita lì?'),
         bottone(p.votoOra === 'finale' ? 'Votazione finale' : p.votoOra ? 'Votazione' : 'Prossima manche', dopoRivelazione));
     }
     latoDx.append(box);
@@ -8705,8 +8731,8 @@ Capriccio | Bisogno
         li.append(el('span', '', testo), el('b', '', punti > 0 ? `+${punti}` : punti < 0 ? `\u2212${-punti}` : '0'));
         righe.append(li);
       };
-      riga(`Punti delle ${p.totale} manche`, p.punti);
-      p.voti.forEach(v => riga(`${v.finale ? 'Voto finale' : `Voto dopo la ${v.dopo}\u00aa`}: ${nomeDi(v.scelto)} ${v.giusto ? '\u2713' : '\u2717'}`, v.punti, 'voto' + (v.giusto ? ' giusto' : ' sbagliato')));
+      riga(`Punti totalizzati nelle ${p.totale} manche`, p.punti);
+      p.voti.forEach(v => riga(`${v.finale ? 'Voto finale' : `Voto dopo la ${v.dopo}\u00aa manche`}: ${nomeDi(v.scelto)} ${v.giusto ? '\u2713' : '\u2717'}`, v.punti, 'voto' + (v.giusto ? ' giusto' : ' sbagliato')));
       const chi = el('p', 'disturbatori-fine');
       chi.append(due ? 'I Disturbatori erano ' : 'Il Disturbatore era ', el('b', '', elencoNomi(p.disturbatori.map(nomeDi))));
       destra.append(righe, chi);
