@@ -3121,6 +3121,10 @@
   }
   .passaggio.rivela-ruolo .avviso svg { width: 20px; height: 20px; color: var(--ambra-testo); }
   .passaggio.rivela-ruolo .avviso b { font-weight: 800; color: var(--ambra-testo); }
+
+  /* Il ruolo sta sempre su una riga: riquadro un po' più largo e carattere appena più piccolo, mai a capo a metà parola */
+  .passaggio.rivela-ruolo .lcd { width: min(560px, 100%); gap: 14px; }
+  .passaggio.rivela-ruolo .lcd h2 { font-size: clamp(20px, 8.2cqh, 36px); overflow-wrap: normal; white-space: nowrap; }
 </style>
 </head>
 <body>
