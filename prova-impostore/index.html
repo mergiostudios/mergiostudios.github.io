@@ -3111,6 +3111,16 @@
   .passaggio.rivela-ruolo .nota { white-space: pre-line; }
   .silenzio-radio.in-onda .sr-cartello { background: #0B2A1E; color: #4FD69E; box-shadow: 0 0 0 3px #14432F, 0 0 26px rgba(79, 214, 158, .45); text-shadow: 0 0 12px rgba(79, 214, 158, .8); }
   .silenzio-radio.in-onda .sr-spia { background: #4FD69E; box-shadow: 0 0 10px #4FD69E; }
+
+  /* Con due Disturbatori: il riquadro del complice (o, per gli Operatori, "sono due"): ben leggibile ma sotto il ruolo, senza rubargli la scena */
+  .passaggio.rivela-ruolo .avviso {
+    font-size: clamp(14.5px, 4.6cqh, 17px); font-weight: 600; padding: clamp(5px, 1.6cqh, 8px) 16px clamp(5px, 1.6cqh, 8px) 12px; gap: 8px;
+    background: color-mix(in srgb, var(--ambra) 12%, transparent); color: var(--inchiostro);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ambra) 55%, transparent);
+    animation: ruolo-nota 1.3s ease-out both;
+  }
+  .passaggio.rivela-ruolo .avviso svg { width: 20px; height: 20px; color: var(--ambra-testo); }
+  .passaggio.rivela-ruolo .avviso b { font-weight: 800; color: var(--ambra-testo); }
 </style>
 </head>
 <body>
@@ -5954,9 +5964,9 @@ Capriccio | Bisogno
       '<b>Una manche a testa.</b> A ogni manche il telefono passa in senso orario a un nuovo Conduttore: solo lui guarda la frequenza nascosta e dice un indizio ad alta voce. Può cambiare le radiocassette fino a due volte. Anche un Disturbatore può essere Conduttore, e dare l’indizio che vuole.',
       '<b>Il Blocco.</b> Dalla seconda manche il Conduttore può bloccare un giocatore (o nessuno): per quella manche il bloccato non tocca la lancetta, ma può votare. Tutti sanno chi è bloccato, nessuno sa se è un Operatore o un Disturbatore. Chi è stato bloccato non può esserlo di nuovo nella manche successiva.',
       '<b>Silenzio radio.</b> Dopo l’indizio nessuno parla fino alla rivelazione. I primi giocatori dopo il Conduttore sono i <b>Cercafrequenze</b> (2 con 5–6 giocatori, 3 con 7–8, 4 con 9–10): uno alla volta, di nascosto, mettono la lancetta dove pensano che sia la frequenza; la radio fa la media delle loro posizioni.',
-      '<b>Gli altri sono i Sintonizzatori:</b> uno alla volta ritoccano la lancetta, ognuno dentro la sua finestra, che si stringe a ogni passaggio (per esempio ±14% e poi ±7%). Si può anche lasciarla dov’è.',
+      '<b>Gli altri sono i Sintonizzatori:</b> uno alla volta ritoccano la lancetta, ognuno dentro la sua finestra, che si stringe a ogni passaggio (per esempio ±10% e poi ±5%). Si può anche lasciarla dov’è.',
       '<b>Si rivela la frequenza nascosta</b> e il gruppo prende da 0 a 5 punti, con lo stesso segnale delle altre modalità. Ora si parla: perché la lancetta è finita proprio lì? I Cercafrequenze però non possono mai dire dove avevano messo la loro lancetta.',
-      '<b>Le votazioni si fanno dal vivo.</b> Dopo alcune manche (la radio vi dice quando) indicate insieme un sospettato e registratelo sul telefono; se siete pari, decide il Conduttore della manche appena finita. Un voto giusto vale +1, uno sbagliato −1; il voto finale, dopo l’ultima manche, vale +2 o −2. Con due Disturbatori basta indovinarne uno. L’esito resta segreto fino alla fine.',
+      '<b>Le votazioni si fanno dal vivo.</b> Dopo alcune manche (la radio vi dice quando) indicate insieme un sospettato e registratelo sul telefono; se siete pari, decide il Conduttore della manche appena finita. Un voto giusto vale +1, uno sbagliato −1; il voto finale, dopo l’ultima manche, vale +2 o −2. Con due Disturbatori basta indovinarne uno, ma nel secondo voto non si può indicare di nuovo la persona del primo (il voto finale è libero). L’esito resta segreto fino alla fine.',
       '<b>A fine partita</b> si sommano i punti delle manche e quelli dei voti: se il gruppo raggiunge l’obiettivo vincono gli Operatori, altrimenti vincono i Disturbatori. Obiettivo: 8 punti in 5, 12 in 6, 13 in 7, 14 in 8, 17 in 9, 20 in 10.'
     ] }
   };
@@ -8264,12 +8274,13 @@ Capriccio | Bisogno
   const SOGLIE_IMPOSTORE = { 5: 8, 6: 12, 7: 13, 8: 14, 9: 17, 10: 20 };            // obiettivo (provvisorio): da verificare con partite vere
   const CERCATORI_IMPOSTORE = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 4, 10: 4 };
   // di quanto può spostare la lancetta ogni Sintonizzatore (in punti della scala, cioè in %), nell'ordine
-  const FINESTRE_IMPOSTORE = { 5: [14, 7], 6: [14, 7, 3.5], 7: [20, 10, 5], 8: [20, 10, 5, 2.5], 9: [20, 10, 5, 2.5], 10: [20, 10, 5, 2.5, 2.5] };
+  const FINESTRE_IMPOSTORE = { 5: [10, 5], 6: [10, 5, 2.5], 7: [12, 6, 3], 8: [12, 6, 3, 1.5], 9: [12, 6, 3, 1.5], 10: [12, 6, 3, 1.5, 1] };
   // dopo quali manche si vota (+1/−1); dopo l'ultima c'è sempre il voto finale (+2/−2)
   const VOTI_IMPOSTORE = { 5: [3], 6: [3], 7: [3, 5], 8: [3, 5], 9: [3, 6], 10: [3, 6] };
   const disturbatoriPer = n => (n >= 8 ? 2 : 1);
   const percento = v => String(v).replace('.', ',');
   const media = lista => lista.reduce((s, v) => s + v, 0) / lista.length;
+  const ICONA_COPPIA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="3.2"/><circle cx="16" cy="9" r="2.7"/><path d="M2.5 20a6 6 0 0 1 12 0M14 14.6a5 5 0 0 1 7.5 4.4"/></svg>';
   const ICONA_BLOCCO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
 
   function avviaImpostore(nomi) {
@@ -8300,10 +8311,18 @@ Capriccio | Bisogno
     chiediPassaggio({ sopra: `Ruolo ${k + 1} di ${p.giocatori.length}`, nome, bottone: 'Tieni premuto per il tuo ruolo', tieni: true, nota: 'Gli altri non devono vedere lo schermo' }, () => {
       const disturba = p.disturbatori.includes(k);
       const complice = p.disturbatori.filter(i => i !== k).map(nomeDi)[0];
+      // con due Disturbatori c'è un riquadro in evidenza per tutti (stessa forma e colore, così da fuori non si capisce niente):
+      // ai Disturbatori dice il nome del complice, agli Operatori che i Disturbatori sono due
+      let riquadro = null;
+      if (p.disturbatori.length > 1) {
+        riquadro = el('span', 'avviso-ruolo');
+        if (disturba) riquadro.append('Il tuo complice è ', el('b', '', complice));
+        else riquadro.append('Tra voi ci sono ', el('b', '', 'due'), ' Disturbatori');
+      }
       chiediPassaggio({
         sopra: `${nome}, sei un`, nome: disturba ? 'Disturbatore' : 'Operatore', bottone: 'Nascondi', suono: 'apriBersaglio', ruolo: true,
-        nota: disturba ? 'Disturba il segnale senza dare troppo nell\u2019occhio' + (complice ? `\nIl tuo complice è ${complice}` : '')
-          : 'Aiuta il gruppo a identificare la frequenza nascosta'
+        avviso: riquadro, iconaAvviso: ICONA_COPPIA,
+        nota: disturba ? 'Disturba il segnale senza dare troppo nell\u2019occhio' : 'Aiuta il gruppo a identificare la frequenza nascosta'
       }, () => {
         suona('nascondi');
         if (k + 1 < p.giocatori.length) mostraRuolo(k + 1);
@@ -8353,7 +8372,7 @@ Capriccio | Bisogno
     scegliNome({
       sopra: 'Blocco', titolo: 'Vuoi bloccare qualcuno?',
       nota: 'In questa manche il giocatore bloccato non tocca la lancetta. Questa è un\u2019informazione pubblica.',
-      nomi: [...p.cercatori, ...p.sintonizzatori], ruoli: ruoloDi, immune: p.immune, conferma: 'Blocca', nessuno: 'Non bloccare nessuno'
+      nomi: [...p.cercatori, ...p.sintonizzatori], ruoli: ruoloDi, escluso: p.immune, motivo: 'Immune in questa manche', conferma: 'Blocca', nessuno: 'Non bloccare nessuno'
     }, scelto => { p.bloccato = scelto; suona(scelto == null ? 'tacca' : 'nascondi'); indizioImpostore(); });
   }
   // davanti a tutti: le radiocassette, chi è bloccato, e il Conduttore dice l'indizio
@@ -8467,12 +8486,16 @@ Capriccio | Bisogno
   // votazione dal vivo: l'app registra solo il nome deciso dal gruppo, e non dice se è giusto
   function votazioneImpostore() {
     const p = partita, n = p.giocatori.length, finale = p.votoOra === 'finale';
+    // con due Disturbatori, nel secondo voto intermedio non si può indicare di nuovo chi è stato votato nel primo:
+    // così si va a caccia anche dell'altro Disturbatore (il voto finale invece è libero)
+    const precedente = !finale && p.disturbatori.length > 1 && p.voti.length === 1 ? p.voti[0].scelto : null;
     p.fase = 'voto'; aggiorna();
     scegliNome({
       sopra: finale ? 'Votazione finale' : `Votazione ${p.voti.length + 1} di ${VOTI_IMPOSTORE[n].length + 1}`,
       titolo: p.disturbatori.length > 1 ? 'Chi è uno dei Disturbatori?' : 'Chi è il Disturbatore?',
-      nota: `Votate a voce, poi toccate il nome scelto. Se siete pari, decide ${nomeDi(p.conduttore)}. ` + (finale ? 'Questo voto vale doppio.' : ''),
-      nomi: p.giocatori.map((_, i) => i), conferma: 'Registra il voto'
+      nota: (precedente != null ? `Non potete votare di nuovo ${nomeDi(precedente)}: cercate l\u2019altro Disturbatore. ` : '') +
+        `Votate a voce, poi toccate il nome scelto. Se siete pari, decide ${nomeDi(p.conduttore)}.` + (finale ? ' Questo voto vale doppio.' : ''),
+      nomi: p.giocatori.map((_, i) => i), escluso: precedente, motivo: 'Già votato', conferma: 'Registra il voto'
     }, scelto => {
       const giusto = p.disturbatori.includes(scelto), valore = finale ? 2 : 1;
       p.voti.push({ dopo: p.manche, scelto, giusto, punti: giusto ? valore : -valore, finale });
@@ -8502,13 +8525,17 @@ Capriccio | Bisogno
       b.setAttribute('aria-pressed', 'false');
       if (o.ruoli) {
         const testo = el('span', 'og-testo');
-        testo.append(el('span', 'og-nome', nomeDi(i)), el('small', 'og-ruolo', i === o.immune ? 'Immune in questa manche' : o.ruoli[i]));
+        testo.append(el('span', 'og-nome', nomeDi(i)), el('small', 'og-ruolo', i === o.escluso ? o.motivo : o.ruoli[i]));
+        b.append(testo);
+      } else if (i === o.escluso) {
+        const testo = el('span', 'og-testo');
+        testo.append(el('span', 'og-nome', nomeDi(i)), el('small', 'og-ruolo', o.motivo));
         b.append(testo);
       } else b.append(el('i', 'num', i + 1), el('span', '', nomeDi(i)));
-      if (i === o.immune) {
+      if (i === o.escluso) {
         b.disabled = true; b.classList.add('immune');
         const divieto = el('span', 'og-divieto'); divieto.innerHTML = ICONA_BLOCCO; b.prepend(divieto);
-        b.setAttribute('aria-label', `${nomeDi(i)}: non si può bloccare, era bloccato nella manche prima`);
+        b.setAttribute('aria-label', `${nomeDi(i)}: ${o.motivo}`);
         return b;
       }
       b.addEventListener('click', () => {
@@ -8579,7 +8606,7 @@ Capriccio | Bisogno
       box.append(el('div', 'etichetta', 'Conduttore'), el('div', 'chi', nomeDi(p.conduttore)));
     } else if (p.fase === 'tentativo') {
       const a = p.azioni[p.passo], cerca = a.tipo === 'cerca';
-      box.append(el('div', 'etichetta', cerca ? `${cercatoreN(p, a)}° Cercafrequenze` : `${a.ordine}° Sintonizzatore · ±${percento(a.limite)}%`), el('div', 'chi', nomeDi(a.chi)),
+      box.append(el('div', 'etichetta', cerca ? `${cercatoreN(p, a)}° Cercafrequenze` : `${a.ordine}° Sintonizzatore`), el('div', 'chi', nomeDi(a.chi)),
         el('div', 'ruolo', cerca ? 'Metti la lancetta sul centro della frequenza nascosta' : 'Ritocca la lancetta dentro la finestra, o lasciala dov’è'),
         bottoneSicuro('Conferma', confermaImpostore));
     } else if (p.fase === 'rivelazione') {
