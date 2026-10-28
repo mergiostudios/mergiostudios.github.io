@@ -5078,6 +5078,31 @@ Capriccio | Bisogno
         o.connect(fl); o.start(T); o.stop(T + dur + 0.2);
       }));
     }
+    // corda pizzicata (Karplus-Strong): un lampo di rumore che gira dentro una "corda" e si smorza da solo.
+    // È il timbro naturale di un pizzicato d'archi o di un contrabbasso; le corde si calcolano una volta sola
+    const corde = {};
+    function corda(n, dur, smorza, scuro, variante = 0) {
+      const k = [n, dur, smorza, scuro, variante].join('|');
+      if (corde[k]) return corde[k];
+      const sr = ctx.sampleRate, L = Math.floor(sr * dur), p = Math.max(2, Math.round(sr / NOTA(n) - 0.5));
+      const buf = ctx.createBuffer(1, L, sr), y = buf.getChannelData(0);
+      let prec = 0, media = 0, picco = 0;
+      for (let i = 0; i < Math.min(p, L); i++) { prec += (1 - scuro) * (Math.random() * 2 - 1 - prec); y[i] = prec; media += prec / p; }
+      for (let i = 0; i < Math.min(p, L); i++) { y[i] -= media; picco = Math.max(picco, Math.abs(y[i])); }
+      for (let i = 0; i < Math.min(p, L); i++) y[i] /= picco || 1;
+      for (let i = p; i < L; i++) y[i] = smorza * 0.5 * (y[i - p] + (i > p ? y[i - p - 1] : 0));
+      return (corde[k] = buf);
+    }
+    // "luce": quanto è brillante il colpo; gli armonici acuti poi si spengono in fretta, come su una corda vera
+    function pizzicato({ n, t = 0, dur = 0.5, vol = 0.1, smorza = 0.985, scuro = 0.45, luce = 9, variante = 0, pan, dest = radio }) {
+      const T = ctx.currentTime + t, v = vol * guadagno, f = NOTA(n);
+      const s = ctx.createBufferSource(); s.buffer = corda(n, dur, smorza, scuro, variante);
+      const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 0.6;
+      fl.frequency.setValueAtTime(Math.min(16000, f * luce), T); fl.frequency.exponentialRampToValueAtTime(Math.min(16000, f * 1.6 + 250), T + Math.min(0.3, dur * 0.6));
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(v, T); g.gain.setValueAtTime(v, T + dur * 0.75); g.gain.linearRampToValueAtTime(0.0001, T + dur);
+      s.connect(fl); fl.connect(g); g.connect(uscita(dest, pan)); s.start(T); s.stop(T + dur);
+    }
     /* ---------- Catalogo dei suoni ---------- */
     const S = {
       // tasti e comandi
@@ -5306,32 +5331,130 @@ Capriccio | Bisogno
           tono({ f: NOTA(n), tipo: 'triangle', t: t + tt, dur: i === 4 ? 1.4 : 0.18, vol: 0.12, att: 0.01 }));
         [84, 88, 91, 96, 100].forEach((n, i) => campana({ f: NOTA(n), t: t + 1.1 + i * 0.08, dur: 1, vol: 0.06, rapporto: 3.5, indice: 1.5, pan: -0.6 + i * 0.3 }));
       },
-      // Impostore, vincono i Disturbatori: la fanfara degli Operatori parte… e viene «hackerata».
-      // Due colpi di ottoni, poi una scarica e la radio pirata prende il controllo: un motivetto furbo in minore
-      // (con la quarta aumentata, il suono del cattivo), un basso che si insinua e un accordo finale che si scorda e si spegne
-      disturbatori() {
-        ottone({ note: [60, 64, 67], t: 0, dur: 0.14, vol: 0.03 });
-        tono({ f: NOTA(48), tipo: 'triangle', t: 0, dur: 0.16, vol: 0.11, att: 0.01 });
-        ottone({ note: [60, 64, 67], t: 0.2, dur: 0.12, vol: 0.03 });
-        // l'interferenza: la nota cade, scatti e una scarica di rumore che passa da un lato all'altro
-        tono({ f: NOTA(67), f2: NOTA(43), tipo: 'sawtooth', t: 0.34, dur: 0.4, vol: 0.09, dest: radio, lp: 2400 });
-        [0.36, 0.42, 0.47].forEach((t, i) => scatto({ t, vol: 0.12, f: 3200 - i * 600, tonfo: 0, pan: [-0.6, 0.6, 0][i] }));
-        fruscio({ t: 0.34, dur: 0.42, vol: 0.22, f: 3000, f2: 500, q: 0.7, att: 0.005, pan: -0.5 });
-        fruscio({ t: 0.5, dur: 0.3, vol: 0.16, f: 900, f2: 4000, q: 1.2, att: 0.005, pan: 0.6 });
-        // il motivetto dei Disturbatori: staccato, in punta di piedi
-        const tema = [[60, 0.78], [63, 0.96], [66, 1.14], [65, 1.32], [63, 1.56], [62, 1.74], [66, 1.92]];
-        tema.forEach(([n, t], i) => {
-          tono({ f: NOTA(n + 12), tipo: 'square', t, dur: 0.13, vol: 0.035, dest: radio, lp: 2600, pan: i % 2 ? 0.25 : -0.25 });
-          tono({ f: NOTA(n + 12) * 1.012, tipo: 'sawtooth', t, dur: 0.12, vol: 0.02, dest: radio, lp: 1800 });
+      // Impostore, vincono i Disturbatori: la fanfara degli Operatori parte… e viene dirottata.
+      // Partono i primi tre accordi della vittoria, ma sul terzo la radio perde il segnale: l'accordo cala e trema
+      // come un nastro che rallenta, sale il fruscio di una manopola che gira, le scariche si fanno fitte e un fischio
+      // scende fino al do: lì si aggancia la radio pirata. Il motivetto furbo entra ovattato e si apre: archi pizzicati
+      // in punta di piedi, contrabbasso e schiocchi di dita, con un leggero swing. Chiude un accordo storto e la radio pirata stacca.
+      disturbatori(o) {
+        const t0 = o.t || 0, T0 = ctx.currentTime + t0, caso = (a, b) => a + Math.random() * (b - a);
+        // un accordo di ottoni che cede: l'intonazione scende e il tremolio cresce, mentre il suono si chiude
+        const cede = ({ note, t, dur, vol, cala, trema, basso, apri = 3200, chiudi = 380 }) => {
+          const T = T0 + t, v = vol * guadagno, fine = T + dur;
+          const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 2;
+          fl.frequency.setValueAtTime(500, T); fl.frequency.linearRampToValueAtTime(apri, T + 0.06);
+          fl.frequency.exponentialRampToValueAtTime(apri * 0.45, T + dur * 0.4); fl.frequency.exponentialRampToValueAtTime(chiudi, fine);
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.0001, T); g.gain.linearRampToValueAtTime(v, T + 0.03);
+          g.gain.setValueAtTime(v, T + dur * 0.32); g.gain.linearRampToValueAtTime(v * 0.5, T + dur * 0.7); g.gain.linearRampToValueAtTime(0.0001, fine);
+          fl.connect(g); g.connect(radio);
+          const sorgenti = [];
+          const scende = ctx.createConstantSource ? ctx.createConstantSource() : null;
+          if (scende) {
+            scende.offset.setValueAtTime(0, T); scende.offset.setValueAtTime(0, T + dur * 0.22);
+            scende.offset.linearRampToValueAtTime(cala * 0.3, T + dur * 0.55); scende.offset.linearRampToValueAtTime(cala, fine);
+            sorgenti.push(scende);
+          }
+          // due tremolii a velocità diverse: il risultato è irregolare, come un segnale disturbato
+          const l1 = ctx.createOscillator(), l2 = ctx.createOscillator(), p1 = ctx.createGain(), p2 = ctx.createGain();
+          l1.frequency.setValueAtTime(6, T); l1.frequency.linearRampToValueAtTime(12, fine); l2.frequency.value = 2.3;
+          [p1, p2].forEach((p, i) => { p.gain.setValueAtTime(0, T); p.gain.setValueAtTime(0, T + dur * 0.2); p.gain.linearRampToValueAtTime(trema * (i ? 0.6 : 1), T + dur * 0.9); });
+          l1.connect(p1); l2.connect(p2); sorgenti.push(l1, l2);
+          const pilota = osc => { if (scende) scende.connect(osc.detune); p1.connect(osc.detune); p2.connect(osc.detune); };
+          note.forEach(n => [-7, 7].forEach(det => {
+            const os = ctx.createOscillator(); os.type = 'sawtooth'; os.frequency.value = NOTA(n); os.detune.value = det;
+            pilota(os); os.connect(fl); sorgenti.push(os);
+          }));
+          if (basso) {
+            const os = ctx.createOscillator(), gb = ctx.createGain(); os.type = 'triangle'; os.frequency.value = NOTA(basso);
+            gb.gain.setValueAtTime(0.0001, T); gb.gain.linearRampToValueAtTime(0.12 * guadagno, T + 0.01);
+            gb.gain.setValueAtTime(0.12 * guadagno, T + dur * 0.3); gb.gain.linearRampToValueAtTime(0.0001, fine);
+            pilota(os); os.connect(gb); gb.connect(master); sorgenti.push(os);
+          }
+          sorgenti.forEach(x => { x.start(T); x.stop(fine + 0.05); });
+        };
+
+        // 1. la fanfara: due colpi decisi…
+        ottone({ note: [60, 64, 67], t: t0, dur: 0.14, vol: 0.03 });
+        ottone({ note: [60, 64, 67], t: t0 + 0.2, dur: 0.14, vol: 0.03 });
+        [0, 0.2].forEach(tt => tono({ f: NOTA(48), tipo: 'triangle', t: t0 + tt, dur: 0.18, vol: 0.12, att: 0.01 }));
+        // …e il terzo accordo che non arriva mai in fondo
+        cede({ note: [65, 69, 72], t: 0.4, dur: 1.05, vol: 0.03, cala: -480, trema: 70, basso: 41 });
+
+        // 2. l'interferenza cresce piano piano: una manopola che gira avanti e indietro, il segnale che va e viene
+        const N = 64, curva = new Float32Array(N);
+        for (let i = 0; i < N; i++) { const x = i / (N - 1); curva[i] = 650 * Math.pow(6, (0.5 + 0.5 * Math.sin(Math.PI * 2 * 1.7 * x + 0.4)) * (1 - 0.55 * x)); }
+        {
+          const T = T0 + 0.45, D = 1.3, v = 0.1 * guadagno;
+          const src = ctx.createBufferSource(); src.buffer = rumoreBuf; src.loop = true;
+          const fl = ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.Q.value = 3; fl.frequency.setValueCurveAtTime(curva, T, D);
+          const va = ctx.createGain(); va.gain.value = 0.6;
+          const lv = ctx.createOscillator(), lg = ctx.createGain(); lv.frequency.setValueAtTime(5, T); lv.frequency.linearRampToValueAtTime(11, T + D); lg.gain.value = 0.4;
+          lv.connect(lg); lg.connect(va.gain);
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.0001, T); g.gain.linearRampToValueAtTime(v * 0.35, T + 0.25); g.gain.linearRampToValueAtTime(v, T + 0.6);
+          g.gain.setValueAtTime(v, T + 0.72); g.gain.linearRampToValueAtTime(v * 0.3, T + 0.95); g.gain.exponentialRampToValueAtTime(0.0001, T + D);
+          src.connect(fl); fl.connect(va); va.connect(g); g.connect(radio);
+          src.start(T, Math.random() * 1.5); lv.start(T); src.stop(T + D + 0.05); lv.stop(T + D + 0.05);
+        }
+        fruscio({ t: t0 + 0.55, dur: 0.75, vol: 0.045, tipo: 'highpass', f: 3500, q: 0.7, att: 0.45 });
+        // scariche sempre più fitte
+        for (let i = 0; i < 16; i++) {
+          const x = i / 15;
+          fruscio({ t: t0 + 0.5 + 0.7 * Math.sqrt(x) + caso(-0.015, 0.015), dur: caso(0.008, 0.03), vol: 0.07 + 0.15 * x, f: caso(1200, 5200), q: 1.2, att: 0.001, pan: caso(-0.6, 0.6) });
+        }
+        // due fischi di eterodina scendono, si inseguono e si fermano insieme sul do: la radio pirata si è agganciata
+        [[2900, 0], [2500, 0.05]].forEach(([da, rit]) => {
+          const T = T0 + 0.72 + rit, v = 0.018 * guadagno, os = ctx.createOscillator(), g = ctx.createGain();
+          os.frequency.setValueAtTime(da, T); os.frequency.exponentialRampToValueAtTime(NOTA(72) * (rit ? 1.07 : 1.03), T + 0.38);
+          os.frequency.exponentialRampToValueAtTime(NOTA(72), T + 0.5 - rit);
+          g.gain.setValueAtTime(0.0001, T); g.gain.linearRampToValueAtTime(v, T + 0.15);
+          g.gain.setValueAtTime(v, T + 0.42 - rit); g.gain.exponentialRampToValueAtTime(0.0001, T + 0.62 - rit);
+          os.connect(g); g.connect(radio); os.start(T); os.stop(T + 0.7);
         });
-        // il basso che si avvicina di soppiatto: do, sol, do, fa diesis
-        [[36, 0.78], [43, 1.14], [36, 1.56], [42, 1.92]].forEach(([n, t]) => tono({ f: NOTA(n), tipo: 'triangle', t, dur: 0.3, vol: 0.13, att: 0.008 }));
-        // accordo finale: do minore con il fa diesis, che ondeggia e si scorda mentre la radio perde il segnale
-        ottone({ note: [48, 51, 54, 60], t: 2.2, dur: 1.2, vol: 0.022 });
-        tono({ f: NOTA(36), tipo: 'triangle', t: 2.2, dur: 1.5, vol: 0.12, att: 0.01 });
-        tono({ f: NOTA(72), f2: NOTA(66), tipo: 'sawtooth', t: 2.2, dur: 1.4, vol: 0.028, dest: radio, lp: 1500, vibrato: 9 });
-        campana({ f: NOTA(78), t: 2.24, dur: 1.2, vol: 0.05, rapporto: 1.41, indice: 2.5, pan: 0.4 });
-        fruscio({ t: 2.9, dur: 1.1, vol: 0.06, f: 1500, f2: 300, q: 0.5, att: 0.3 });
+
+        // 3. il motivetto furbo: entra ovattato, come da lontano, e in mezzo secondo diventa nitido
+        const bus = ctx.createGain(), ov = ctx.createBiquadFilter(), hp = ctx.createBiquadFilter();
+        ov.type = 'lowpass'; ov.Q.value = 0.9; hp.type = 'highpass'; hp.Q.value = 0.7;
+        ov.frequency.setValueAtTime(800, T0); ov.frequency.setValueAtTime(800, T0 + 1.15); ov.frequency.exponentialRampToValueAtTime(7000, T0 + 1.85);
+        hp.frequency.setValueAtTime(450, T0); hp.frequency.setValueAtTime(450, T0 + 1.15); hp.frequency.exponentialRampToValueAtTime(60, T0 + 1.75);
+        bus.connect(hp); hp.connect(ov); ov.connect(radio);
+        const BATTITO = 0.36, SWING = 0.22, INIZIO = 1.25;
+        const quando = k => t0 + INIZIO + Math.floor(k / 2) * BATTITO + (k % 2 ? SWING : 0) + caso(-0.008, 0.008);
+        // la melodia (do, mi bemolle, fa diesis, fa, mi bemolle, re… fa diesis): archi pizzicati, in due, appena sfasati
+        const archi = (n, t, forza, dur = 0.55) => {
+          pizzicato({ n, t, dur, vol: 0.2 * forza, smorza: 0.986, scuro: 0.35, pan: -0.2, dest: bus });
+          pizzicato({ n, t: t + caso(0.008, 0.016), dur, vol: 0.11 * forza, smorza: 0.984, scuro: 0.45, variante: 1, pan: 0.25, dest: bus });
+        };
+        archi(71, quando(0) - 0.065, 0.45, 0.2);                       // acciaccatura: ci si arriva di soppiatto
+        [[72, 0, 1], [75, 1, 0.72], [78, 3, 0.9], [77, 4, 0.8], [75, 5, 0.66], [74, 6, 0.82]].forEach(([n, k, f]) => archi(n, quando(k), f));
+        archi(79, quando(8) - 0.06, 0.4, 0.2);
+        archi(78, quando(8), 1.05, 0.7);
+        campana({ f: NOTA(90), t: quando(8) + 0.01, dur: 0.6, vol: 0.025, rapporto: 4, indice: 0.8, pan: 0.3, dest: bus });
+        // contrabbasso pizzicato e smorzato, sui tempi forti: do, sol, do, fa diesis
+        [[48, 0], [55, 2], [48, 4], [54, 6], [48, 8]].forEach(([n, k]) => {
+          const t = quando(k);
+          pizzicato({ n, t, dur: 0.42, vol: 0.36, smorza: 0.975, scuro: 0.7, luce: 6, dest: bus });
+          tono({ f: NOTA(n - 12), tipo: 'triangle', t, dur: 0.3, vol: 0.07, att: 0.006, dest: bus });
+        });
+        // schiocchi di dita sul secondo e quarto tempo, e una spazzola leggera in levare
+        [2, 6].forEach(k => {
+          const t = quando(k);
+          fruscio({ t, dur: 0.045, vol: 0.16, f: 2400, q: 1.8, att: 0.001, pan: 0.35, dest: bus });
+          fruscio({ t: t + 0.004, dur: 0.02, vol: 0.08, f: 1100, q: 3, att: 0.001, pan: 0.35, dest: bus });
+        });
+        [1, 3, 5, 7, 9].forEach(k => fruscio({ t: quando(k), dur: 0.06, vol: 0.022, tipo: 'highpass', f: 5500, q: 0.7, att: 0.01, pan: -0.3, dest: bus }));
+
+        // 4. la chiusura: un accordo storto pizzicato, gli ottoni che sghignazzano scendendo, un'ultima strizzatina d'occhio
+        const TF = INIZIO + 5 * BATTITO;
+        [60, 63, 66, 72].forEach((n, i) => pizzicato({ n, t: t0 + TF + i * 0.018, dur: 0.7, vol: 0.12, smorza: 0.988, scuro: 0.4, variante: 2, pan: -0.3 + i * 0.2, dest: bus }));
+        pizzicato({ n: 36, t: t0 + TF, dur: 0.8, vol: 0.38, smorza: 0.985, scuro: 0.7, luce: 7, dest: bus });
+        tono({ f: NOTA(36), tipo: 'triangle', t: t0 + TF, dur: 0.9, vol: 0.1, att: 0.01 });
+        cede({ note: [60, 63, 66], t: TF + 0.02, dur: 0.85, vol: 0.02, cala: -90, trema: 22, apri: 2200, chiudi: 500 });
+        archi(90, t0 + TF + 0.4, 0.55, 0.45);
+        // la radio pirata stacca: uno scatto e un soffio di fruscio
+        scatto({ t: t0 + TF + 0.82, vol: 0.1, f: 2600, tonfo: 0 });
+        fruscio({ t: t0 + TF + 0.82, dur: 0.16, vol: 0.06, f: 2000, q: 0.6, att: 0.005 });
       },
       // pareggio: due melodie partono lontane e finiscono sulla stessa nota, in sintonia
       pareggio() {
@@ -5540,152 +5663,384 @@ Capriccio | Bisogno
     };
     // ogni nota: [passo, nota MIDI o accordo, durata in passi]
     const ripeti = (passi, ogni, da = 0) => Array.from({ length: Math.ceil((passi - da) / ogni) }, (_, i) => [da + i * ogni]);
+    // I brani sono lunghi e scritti a sezioni (strofa, variazione, ponte, stacco, ripresa…) cucite una dopo l'altra:
+    // la sezione A è sempre il giro originale della stazione, le altre lo variano senza cambiarne il carattere
+    const sez = (passi, tracce) => ({ passi, tracce });
+    function cuci(base, sezioni) {
+      const tracce = {}; let da = 0;
+      sezioni.forEach(({ passi, tracce: t }) => {
+        Object.entries(t).forEach(([strumento, note]) => {
+          (tracce[strumento] = tracce[strumento] || []).push(...note.map(([p, ...resto]) => [p + da, ...resto]));
+        });
+        da += passi;
+      });
+      return Object.assign({}, base, { passi: da, tracce });
+    }
+    const ottava = (note, d = 12) => note.map(([p, n, ...resto]) => [p, Array.isArray(n) ? n.map(x => x + d) : n + d, ...resto]);
     const BRANI = {
-      // allegra e saltellante, in do maggiore: xilofono, basso che "rimbalza" e battimani
-      merenda: {
-        passo: 60 / 132 / 2, passi: 32,
-        tracce: {
+      // allegra e saltellante, in do maggiore: xilofono, basso che "rimbalza" e battimani.
+      // Giro, variazione col controcanto del basso, ponte in fa, ripresa, stacco a battimani e finale scintillante
+      merenda: (() => {
+        const A = sez(32, {
           xilofono: [[0, 72], [2, 76], [4, 79], [6, 76], [8, 77], [10, 81], [12, 79], [16, 76], [17, 76], [18, 79], [20, 84], [22, 79], [24, 74], [26, 77], [28, 76], [30, 72]],
           boing: [[0, 48], [4, 43], [8, 41], [12, 48], [16, 48], [20, 43], [24, 43], [28, 48]],
           battimani: [[4], [12], [20], [28]],
           sonaglio: ripeti(32, 2, 1)
-        }
-      },
-      // pop da classifica anni '80: do, sol, la minore, fa, con batteria elettronica
-      hitparade: {
-        passo: 60 / 112 / 2, passi: 32,
-        tracce: {
+        });
+        const rimbalzi = [...A.tracce.boing, [2, 55], [6, 50], [10, 53], [14, 55], [18, 55], [22, 50], [26, 50], [30, 55]];
+        const A2 = sez(32, {
+          xilofono: [[0, 72], [1, 74], [2, 76], [4, 79], [5, 77], [6, 76], [8, 77], [10, 81], [11, 79], [12, 77], [13, 76], [14, 79],
+            [16, 76], [18, 79], [19, 81], [20, 84], [22, 83], [23, 81], [24, 79], [26, 77], [27, 74], [28, 76], [29, 74], [30, 72]],
+          boing: rimbalzi,
+          battimani: [[4], [12], [20], [28], [30]],
+          sonaglio: ripeti(32, 1)
+        });
+        // ponte: fa, do, re minore, sol
+        const bassiPonte = [[0, 41], [2, 48], [4, 41], [6, 48], [8, 48], [10, 43], [12, 48], [14, 43], [16, 50], [18, 45], [20, 43], [22, 50], [24, 48], [26, 43], [28, 43], [30, 47]];
+        const B = sez(32, {
+          xilofono: [[0, 81], [2, 79], [3, 77], [4, 81], [6, 84], [8, 79], [10, 76], [12, 72], [14, 76], [16, 77], [17, 77], [18, 74], [20, 79], [22, 77],
+            [24, 76], [25, 77], [26, 79], [28, 74], [30, 71]],
+          boing: bassiPonte,
+          battimani: [[4], [12], [14], [20], [28], [30], [31]],
+          sonaglio: ripeti(32, 2, 1)
+        });
+        const B2 = sez(32, {
+          xilofono: [[0, 77], [1, 79], [2, 81], [4, 84], [6, 81], [8, 79], [9, 77], [10, 76], [12, 79], [14, 84], [16, 81], [18, 77], [20, 74], [21, 76], [22, 77],
+            [24, 79], [26, 76], [28, 74], [29, 76], [30, 77], [31, 71]],
+          boing: bassiPonte,
+          battimani: [[4], [12], [14], [20], [28], [29], [30], [31]],
+          sonaglio: ripeti(32, 1)
+        });
+        // stacco: tutti si fermano sui colpi, battimani e una scaletta di xilofono che rilancia
+        const stacco = sez(16, {
+          xilofono: [[0, 84], [3, 84], [6, 83], [8, 81], [11, 79], [12, 72], [13, 76], [14, 79], [15, 83]],
+          boing: [[0, 48], [3, 48], [6, 43], [8, 41], [11, 43], [14, 43]],
+          battimani: [[0], [3], [6], [8], [11], [14], [15]],
+          sonaglio: [[12], [13], [14], [15]]
+        });
+        const fine = sez(32, {
+          xilofono: [...A.tracce.xilofono.slice(0, -2), [0, 84], [8, 89], [16, 88], [24, 86], [28, 76], [29, 79], [30, 84], [31, 79]],
+          boing: rimbalzi,
+          battimani: [[4], [12], [20], [28], [30]],
+          sonaglio: ripeti(32, 1)
+        });
+        return cuci({ passo: 60 / 132 / 2 }, [A, A2, B, B2, A, stacco, fine]);
+      })(),
+      // pop da classifica anni '80: strofa (do, sol, la minore, fa), seconda strofa, salita, ritornello e stacco di batteria
+      hitparade: (() => {
+        const ottave = radici => radici.flatMap((r, b) => Array.from({ length: 8 }, (_, i) => [b * 8 + i, r + (i % 2 ? 12 : 0)]));
+        const tappeto = accordi => accordi.map((acc, b) => [b * 8, acc, 8]);
+        const STROFA = tappeto([[60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65]]);
+        const A = sez(32, {
           pianoElettrico: [[0, 76], [2, 74], [3, 72], [6, 67], [8, 71], [10, 72], [11, 74], [16, 72], [18, 76], [20, 81], [22, 79], [23, 76], [24, 77], [26, 76], [28, 74], [30, 72]],
-          tappeto: [[0, [60, 64, 67], 8], [8, [59, 62, 67], 8], [16, [57, 60, 64], 8], [24, [57, 60, 65], 8]],
-          bassoSynth: [48, 43, 45, 41].flatMap((radice, b) => Array.from({ length: 8 }, (_, i) => [b * 8 + i, radice + (i % 2 ? 12 : 0)])),
+          tappeto: STROFA,
+          bassoSynth: ottave([48, 43, 45, 41]),
           cassa: ripeti(32, 4),
           rullante: ripeti(32, 4, 2),
           charleston: ripeti(32, 1)
-        }
-      },
-      // in 7/8, con accordi jazz "aperti" in arpeggio e una seconda linea che gira ogni 3 passi
-      cerebrali: {
-        passo: 60 / 104 / 2, passi: 28,
-        tracce: {
-          vibrafono: [[62, 66, 69, 73, 76, 80, 73], [58, 62, 65, 69, 72, 76, 69], [55, 58, 62, 65, 69, 74, 65], [57, 62, 64, 67, 70, 74, 67]]
-            .flatMap((arp, b) => arp.map((n, i) => [b * 7 + i, n])),
-          cristallo: [81, 76, 74, 69, 74, 76, 81, 79, 76, 74].map((n, i) => [i * 3, n]),
-          bassoMorbido: [[0, 50, 4], [4, 57, 3], [7, 46, 4], [11, 53, 3], [14, 43, 4], [18, 50, 3], [21, 45, 4], [25, 52, 3]],
-          tappeto: [[0, [62, 66, 69], 7], [7, [58, 62, 65], 7], [14, [55, 58, 62], 7], [21, [57, 62, 64], 7]],
-          tic: [0, 1, 2, 3].flatMap(b => [[b * 7], [b * 7 + 2], [b * 7 + 4]])
-        }
-      },
+        });
+        const A2 = sez(32, {
+          pianoElettrico: [[0, 76], [2, 74], [3, 72], [4, 74], [6, 76], [8, 74], [10, 71], [11, 72], [12, 74], [16, 72], [18, 76], [20, 81], [21, 83], [22, 84],
+            [24, 81], [26, 79], [27, 77], [28, 76], [30, 74]],
+          tappeto: STROFA,
+          bassoSynth: ottave([48, 43, 45, 41]),
+          cassa: [...ripeti(32, 4), [14], [30]],
+          rullante: ripeti(32, 4, 2),
+          charleston: ripeti(32, 1)
+        });
+        // la salita verso il ritornello: la minore, fa, do, sol, con la cassa che raddoppia e un rullo finale
+        const salita = sez(32, {
+          pianoElettrico: [[0, 72], [2, 72], [3, 74], [4, 76], [6, 72], [8, 77], [10, 77], [11, 76], [12, 77], [14, 81],
+            [16, 79], [18, 79], [19, 77], [20, 76], [22, 72], [24, 74], [26, 76], [28, 77], [29, 79], [30, 83]],
+          tappeto: tappeto([[57, 60, 64], [57, 60, 65], [55, 60, 64], [55, 59, 62]]),
+          bassoSynth: ottave([45, 41, 48, 43]),
+          cassa: ripeti(32, 2),
+          rullante: [[2], [6], [10], [14], [18], [22], [24], [26], [27], [28], [29], [30], [31]],
+          charleston: ripeti(24, 1)
+        });
+        // ritornello: fa, sol, mi minore, la minore / fa, sol, do; melodia raddoppiata all'ottava e cassa dritta
+        const melodia = [[0, 84], [2, 84], [3, 81], [4, 79], [6, 77], [8, 79], [10, 79], [11, 77], [12, 74], [14, 71], [16, 76], [18, 79], [20, 83], [22, 79],
+          [24, 81], [26, 76], [28, 72], [30, 76], [32, 84], [34, 84], [35, 81], [36, 79], [38, 77], [40, 79], [42, 81], [43, 83], [44, 86], [46, 83],
+          [48, 84], [50, 79], [52, 76], [54, 79], [56, 84], [58, 88], [60, 84], [62, 79]];
+        const ritornello = sez(64, {
+          pianoElettrico: [...melodia, ...ottava(melodia, -12)],
+          tappeto: tappeto([[53, 57, 60], [55, 59, 62], [52, 55, 59], [57, 60, 64], [53, 57, 60], [55, 59, 62], [55, 60, 64], [55, 60, 64]]),
+          bassoSynth: ottave([41, 43, 40, 45, 41, 43, 48, 48]),
+          cassa: ripeti(64, 2),
+          rullante: ripeti(64, 4, 2),
+          charleston: ripeti(64, 1),
+          charlestonAperto: [[0], [32]]
+        });
+        const stacco = sez(16, {
+          pianoElettrico: [[0, 72], [2, 76], [4, 79], [6, 84], [8, 83], [10, 79], [12, 74], [14, 71]],
+          tappeto: [[0, [55, 60, 64], 8], [8, [55, 59, 62], 8]],
+          bassoSynth: [[0, 48], [6, 48], [8, 43], [14, 43]],
+          cassa: [[0], [8]],
+          rullante: [[12], [13], [14], [15]],
+          charleston: ripeti(12, 2)
+        });
+        return cuci({ passo: 60 / 112 / 2 }, [A, A2, salita, ritornello, stacco]);
+      })(),
+      // in 7/8, con accordi jazz "aperti" in arpeggio e una seconda linea che gira ogni 3 passi.
+      // Il giro, lo stesso con gli arpeggi rimescolati, un ponte su altri quattro accordi, una sospensione e la ripresa
+      cerebrali: (() => {
+        const giro = ({ arpeggi, ordine = [0, 1, 2, 3, 4, 5, 6], bassi, tappeto, cristallo, tic = [0, 2, 4] }) => sez(28, {
+          vibrafono: arpeggi.flatMap((arp, b) => ordine.map((k, i) => [b * 7 + i, arp[k]])),
+          cristallo: cristallo.map((n, i) => [i * 3, n]),
+          bassoMorbido: bassi.flatMap(([r, q], b) => [[b * 7, r, 4], [b * 7 + 4, q, 3]]),
+          tappeto: tappeto.map((acc, b) => [b * 7, acc, 7]),
+          tic: arpeggi.flatMap((_, b) => tic.map(p => [b * 7 + p]))
+        });
+        const PRIMO = {
+          arpeggi: [[62, 66, 69, 73, 76, 80, 73], [58, 62, 65, 69, 72, 76, 69], [55, 58, 62, 65, 69, 74, 65], [57, 62, 64, 67, 70, 74, 67]],
+          bassi: [[50, 57], [46, 53], [43, 50], [45, 52]],
+          tappeto: [[62, 66, 69], [58, 62, 65], [55, 58, 62], [57, 62, 64]],
+          cristallo: [81, 76, 74, 69, 74, 76, 81, 79, 76, 74]
+        };
+        const SECONDO = {
+          arpeggi: [[55, 59, 62, 66, 69, 73, 66], [54, 57, 61, 64, 69, 73, 64], [52, 55, 59, 62, 66, 71, 62], [57, 62, 64, 67, 71, 74, 67]],
+          bassi: [[43, 50], [42, 49], [40, 47], [45, 52]],
+          tappeto: [[55, 59, 62], [54, 57, 61], [52, 55, 59], [57, 62, 64]],
+          cristallo: [78, 74, 73, 69, 71, 74, 78, 76, 74, 73]
+        };
+        const A = giro(PRIMO);
+        const A2 = giro({ ...PRIMO, ordine: [0, 3, 1, 4, 2, 5, 6], cristallo: [74, 76, 81, 83, 81, 76, 74, 69, 74, 76] });
+        const B = giro(SECONDO);
+        const B2 = giro({ ...SECONDO, ordine: [5, 4, 3, 2, 1, 0, 3], cristallo: [71, 73, 74, 78, 81, 78, 74, 73, 71, 69], tic: [0, 2, 4, 5] });
+        // sospensione: solo il tappeto, un basso lungo e qualche cristallo, come se il tempo si fermasse
+        const sospeso = sez(14, {
+          tappeto: [[0, [58, 62, 65], 14]],
+          bassoMorbido: [[0, 46, 13]],
+          cristallo: [[0, 81], [3, 76], [6, 74], [9, 76], [12, 81]],
+          vibrafono: [[0, 70], [7, 69]],
+          tic: [[11], [12], [13]]
+        });
+        const fine = giro({ ...PRIMO, tic: [0, 1, 2, 4, 5] });
+        fine.tracce.vibrafono.push(...[0, 7, 14, 21].map((p, b) => [p, PRIMO.arpeggi[b][5] + 12]));
+        return cuci({ passo: 60 / 104 / 2 }, [A, A2, B, B2, sospeso, A, fine]);
+      })(),
       // "piccante": groove funk lento in mi dorico, chitarra wah-wah "bau-ciccà-uau-uau",
-      // basso morbido e sincopato, accordi di piano Rhodes e un sospiro di synth nella seconda metà
+      // basso morbido e sincopato, accordi di piano Rhodes e un sospiro di synth.
+      // Giro, variazione con domanda e risposta, ponte (do settima maggiore, si settima), giro, stacco di basso e batteria, ripresa
       mezzanotte: (() => {
         const EM = [64, 67, 71], LA = [61, 64, 67];                       // accordi della chitarra
-        const battuta = (b, acc) => [[0, acc, 3], [6, acc, 2], [10, acc, 2], [14, acc, 2]].map(([p, n, d]) => [b * 16 + p, n, d]);
-        const graffi = b => [3, 4, 12, 13].map(p => [b * 16 + p]);
+        const battuta = (b, acc, ritmo = [[0, 3], [6, 2], [10, 2], [14, 2]]) => ritmo.map(([p, d]) => [b * 16 + p, acc, d]);
+        const graffi = (b, dove = [3, 4, 12, 13]) => dove.map(p => [b * 16 + p]);
         const basso = [[0, 40, 3], [3, 40, 1], [6, 47, 2], [8, 45, 2], [10, 43, 1], [11, 40, 3],
                        [16, 45, 3], [19, 45, 1], [22, 49, 2], [24, 52, 2], [26, 50, 1], [27, 49, 1], [28, 47, 2], [30, 45, 2]];
-        const batteria = (fn) => [0, 1, 2, 3].flatMap(b => fn(b));
-        return {
-          passo: 60 / 96 / 4, passi: 64, swing: 0.12,
-          tracce: {
-            wah: [...battuta(0, EM), ...battuta(1, LA), ...battuta(2, EM), ...battuta(3, LA)],
-            graffio: batteria(graffi),
-            bassoFunk: [...basso, ...basso.map(([p, n, d]) => [p + 32, n, d])],
-            rhodes: [0, 1, 2, 3].flatMap(b => {
-              const acc = b % 2 ? [55, 61, 66, 71] : [55, 59, 62, 66];        // la13 e mi minore 9
-              return [[b * 16, acc, 12], [b * 16 + 10, acc, 4]];
-            }),
-            sospiro: [[44, 71, 2], [46, 74, 2], [48, 76, 6, 74], [56, 79, 2], [58, 78, 2], [60, 76, 4]],
-            cassaMorbida: batteria(b => [[b * 16], [b * 16 + 7], [b * 16 + 10]]),
-            rullanteMorbido: batteria(b => [[b * 16 + 4], [b * 16 + 12]]),
-            charlestonForte: batteria(b => [0, 2, 4, 6, 8, 10, 12].map(p => [b * 16 + p])),
-            charleston: batteria(b => [1, 3, 5, 7, 9, 11, 13].map(p => [b * 16 + p])),
-            charlestonAperto: batteria(b => [[b * 16 + 14]])
-          }
-        };
+        const battute = (n, fn) => Array.from({ length: n }, (_, b) => fn(b)).flat();
+        const batteria = n => ({
+          cassaMorbida: battute(n, b => [[b * 16], [b * 16 + 7], [b * 16 + 10]]),
+          rullanteMorbido: battute(n, b => [[b * 16 + 4], [b * 16 + 12]]),
+          charlestonForte: battute(n, b => [0, 2, 4, 6, 8, 10, 12].map(p => [b * 16 + p])),
+          charleston: battute(n, b => [1, 3, 5, 7, 9, 11, 13].map(p => [b * 16 + p])),
+          charlestonAperto: battute(n, b => [[b * 16 + 14]])
+        });
+        const rhodes = (accordi) => accordi.flatMap((acc, b) => [[b * 16, acc, 12], [b * 16 + 10, acc, 4]]);
+        const RH = [[55, 59, 62, 66], [55, 61, 66, 71], [55, 59, 62, 66], [55, 61, 66, 71]];   // mi minore 9 e la13
+        const A = sez(64, {
+          wah: [...battuta(0, EM), ...battuta(1, LA), ...battuta(2, EM), ...battuta(3, LA)],
+          graffio: battute(4, b => graffi(b)),
+          bassoFunk: [...basso, ...basso.map(([p, n, d]) => [p + 32, n, d])],
+          rhodes: rhodes(RH),
+          sospiro: [[44, 71, 2], [46, 74, 2], [48, 76, 6, 74], [56, 79, 2], [58, 78, 2], [60, 76, 4]],
+          ...batteria(4)
+        });
+        // variazione: la chitarra cambia ritmo, il sospiro fa domanda e risposta e il basso chiude con una scaletta
+        const ritmo2 = [[0, 2], [4, 2], [7, 2], [10, 3], [14, 1]];
+        const A2 = sez(64, {
+          wah: [...battuta(0, EM, ritmo2), ...battuta(1, LA, ritmo2), ...battuta(2, EM, ritmo2), ...battuta(3, LA, ritmo2)],
+          graffio: battute(4, b => graffi(b, [2, 5, 9, 12, 15])),
+          bassoFunk: [...basso, ...basso.slice(0, -2).map(([p, n, d]) => [p + 32, n, d]), [60, 52, 1], [61, 50, 1], [62, 47, 1], [63, 43, 1]],
+          rhodes: rhodes(RH),
+          sospiro: [[8, 79, 2], [10, 76, 2], [12, 74, 4, 71], [40, 76, 2], [42, 79, 2], [44, 81, 6, 79], [56, 78, 2], [58, 76, 2], [60, 74, 4, 71]],
+          ...batteria(4)
+        });
+        // ponte: do settima maggiore e si settima, la svolta più "notturna" del brano
+        const DO = [64, 67, 72], SI = [63, 66, 69];
+        const bassoPonte = [[0, 48, 3], [3, 48, 1], [6, 43, 2], [8, 45, 2], [10, 46, 1], [11, 47, 3],
+                            [16, 47, 3], [19, 47, 1], [22, 54, 2], [24, 51, 2], [26, 50, 1], [27, 49, 1], [28, 48, 2], [30, 47, 2]];
+        const B = sez(64, {
+          wah: [...battuta(0, DO), ...battuta(1, SI), ...battuta(2, DO), ...battuta(3, SI, ritmo2)],
+          graffio: battute(4, b => graffi(b)),
+          bassoFunk: [...bassoPonte, ...bassoPonte.slice(0, -2).map(([p, n, d]) => [p + 32, n, d]), [60, 47, 1], [61, 49, 1], [62, 50, 1], [63, 51, 1]],
+          rhodes: rhodes([[55, 60, 64, 71], [54, 59, 63, 69], [55, 60, 64, 71], [54, 59, 63, 69]]),
+          sospiro: [[0, 79, 6, 76], [8, 76, 2], [10, 79, 2], [12, 83, 4, 81], [16, 81, 6, 78], [24, 78, 2], [26, 75, 2], [28, 74, 4, 71],
+            [32, 72, 6, 71], [40, 76, 2], [42, 79, 2], [44, 84, 6, 83], [52, 81, 2], [54, 78, 2], [56, 75, 4], [60, 78, 4, 76]],
+          ...batteria(4)
+        });
+        // stacco: restano basso e batteria, la chitarra graffia e il sospiro rilancia
+        const stacco = sez(32, {
+          bassoFunk: basso,
+          graffio: [[3], [4], [12], [13], [19], [20], [22], [24], [26], [27], [28], [29], [30], [31]],
+          rhodes: [[0, RH[0], 4]],
+          sospiro: [[24, 71, 2], [26, 74, 2], [28, 76, 4, 79]],
+          ...batteria(2)
+        });
+        const fine = sez(64, {
+          ...A.tracce,
+          sospiro: [[12, 83, 4, 81], [28, 79, 4, 76], ...A.tracce.sospiro]
+        });
+        return cuci({ passo: 60 / 96 / 4, swing: 0.12 }, [A, A2, B, A, stacco, fine]);
       })(),
-      // valzer "liscio" in do maggiore, come nelle balere di una volta
+      // valzer "liscio" in do maggiore, come nelle balere di una volta.
+      // Due frasi in do, il "trio" in fa con il mandolino che canta e la fisarmonica che risponde, poi la ripresa
       paesello: (() => {
-        const DO = [55, 60, 64], SOL7 = [55, 59, 62, 65];
-        const accordi = [DO, DO, SOL7, SOL7, SOL7, SOL7, DO, DO];
-        const bassi = [48, 43, 43, 50, 43, 47, 48, 43];
-        return {
-          passo: 60 / 168 / 2, passi: 48,
-          tracce: {
-            fisarmonica: [[0, 64, 2], [2, 67, 2], [4, 72, 2], [6, 71, 1], [7, 72, 1], [8, 74, 2], [10, 72, 2],
-              [12, 71, 2], [14, 74, 2], [16, 77, 2], [18, 76, 1], [19, 77, 1], [20, 79, 2], [22, 77, 2],
-              [24, 74, 2], [26, 71, 2], [28, 67, 2], [30, 65, 2], [32, 64, 1], [33, 65, 1], [34, 62, 2],
-              [36, 64, 2], [38, 67, 2], [40, 72, 2], [42, 72, 5]],
-            accordoValzer: accordi.flatMap((acc, b) => [[b * 6 + 2, acc], [b * 6 + 4, acc]]),
-            bassoValzer: bassi.map((n, b) => [b * 6, n]),
-            mandolino: [[0, 76, 4], [24, 79, 4], [42, 84, 6]]
-          }
-        };
+        const DO = [55, 60, 64], SOL7 = [55, 59, 62, 65], FA = [57, 60, 65], DO7 = [58, 60, 64], SIb = [58, 62, 65];
+        const valzer = (accordi, bassi, tracce) => sez(48, {
+          accordoValzer: accordi.flatMap((acc, b) => [[b * 6 + 2, acc], [b * 6 + 4, acc]]),
+          bassoValzer: bassi.map((n, b) => [b * 6, n]),
+          ...tracce
+        });
+        const GIRO = [DO, DO, SOL7, SOL7, SOL7, SOL7, DO, DO], BASSI = [48, 43, 43, 50, 43, 47, 48, 43];
+        const A = valzer(GIRO, BASSI, {
+          fisarmonica: [[0, 64, 2], [2, 67, 2], [4, 72, 2], [6, 71, 1], [7, 72, 1], [8, 74, 2], [10, 72, 2],
+            [12, 71, 2], [14, 74, 2], [16, 77, 2], [18, 76, 1], [19, 77, 1], [20, 79, 2], [22, 77, 2],
+            [24, 74, 2], [26, 71, 2], [28, 67, 2], [30, 65, 2], [32, 64, 1], [33, 65, 1], [34, 62, 2],
+            [36, 64, 2], [38, 67, 2], [40, 72, 2], [42, 72, 5]],
+          mandolino: [[0, 76, 4], [24, 79, 4], [42, 84, 6]]
+        });
+        const A2 = valzer(GIRO, BASSI, {
+          fisarmonica: [[0, 64, 2], [2, 67, 2], [4, 72, 2], [6, 71, 1], [7, 72, 1], [8, 74, 2], [10, 72, 2],
+            [12, 71, 2], [14, 74, 2], [16, 79, 2], [18, 77, 1], [19, 76, 1], [20, 77, 2], [22, 74, 2],
+            [24, 71, 2], [26, 74, 2], [28, 77, 2], [30, 77, 1], [31, 76, 1], [32, 74, 2], [34, 71, 2],
+            [36, 72, 2], [38, 76, 2], [40, 79, 2], [42, 84, 5]],
+          mandolino: [[0, 72, 4], [12, 74, 4], [24, 77, 4], [36, 76, 4], [42, 79, 6]]
+        });
+        // il trio in fa: il mandolino prende la melodia, la fisarmonica tiene le note lunghe sotto
+        const B = valzer([FA, FA, DO7, DO7, DO7, DO7, FA, FA], [41, 48, 48, 43, 48, 43, 41, 48], {
+          mandolino: [[0, 81, 4], [4, 79, 2], [6, 77, 4], [10, 76, 2], [12, 79, 6], [18, 72, 6], [24, 79, 4], [28, 77, 2], [30, 76, 4], [34, 74, 2], [36, 77, 6], [42, 72, 6]],
+          fisarmonica: [[0, 69, 6], [6, 72, 6], [12, 70, 6], [18, 67, 6], [24, 64, 6], [30, 67, 6], [36, 69, 6], [42, 65, 6]]
+        });
+        const B2 = valzer([FA, FA, SIb, SIb, FA, DO7, FA, SOL7], [41, 48, 46, 41, 48, 43, 41, 43], {
+          mandolino: [[0, 77, 4], [4, 81, 2], [6, 84, 6], [12, 82, 4], [16, 81, 2], [18, 77, 6], [24, 81, 4], [28, 79, 2], [30, 79, 4], [34, 76, 2], [36, 77, 6], [42, 74, 4], [46, 71, 2]],
+          fisarmonica: [[0, 69, 6], [6, 72, 6], [12, 70, 6], [18, 74, 6], [24, 72, 6], [30, 70, 6], [36, 69, 6], [42, 65, 3], [45, 67, 3]]
+        });
+        // ripresa: la melodia di prima, con il mandolino che le canta sopra una seconda voce
+        const fine = valzer(GIRO, BASSI, {
+          fisarmonica: A.tracce.fisarmonica,
+          mandolino: [[0, 76, 6], [6, 76, 6], [12, 74, 6], [18, 77, 6], [24, 77, 6], [30, 74, 6], [36, 76, 6], [42, 79, 6]]
+        });
+        return cuci({ passo: 60 / 168 / 2 }, [A, A2, B, B2, A, fine]);
       })(),
-      // chiptune in la minore: arpeggi velocissimi, basso a ottave e batteria a rumore
+      // chiptune in la minore: arpeggi velocissimi, basso a ottave e batteria a rumore.
+      // Il giro, una variazione, il "livello del boss" (re minore, la minore, fa, mi), uno stacco con la salita e la ripresa
       ottobit: (() => {
-        const ACCORDI = [[81, 84, 88], [77, 81, 84], [79, 84, 88], [79, 83, 86]];   // la-, fa, do, sol
-        const RADICI = [45, 41, 48, 43];
-        const battute = fn => [0, 1, 2, 3].flatMap(fn);
-        return {
-          passo: 60 / 140 / 4, passi: 64,
-          tracce: {
-            chipLead: [[0, 69, 2], [2, 72, 2], [4, 76, 4], [8, 74, 2], [10, 72, 2], [12, 71, 4], [16, 69, 4], [20, 72, 2],
-              [22, 69, 2], [24, 65, 4], [28, 67, 4], [32, 76, 2], [34, 74, 2], [36, 72, 2], [38, 74, 2], [40, 76, 4],
-              [44, 79, 4], [48, 74, 4], [52, 71, 2], [54, 67, 2], [56, 69, 8]],
-            chipArp: battute(b => Array.from({ length: 16 }, (_, i) => [b * 16 + i, ACCORDI[b][i % 3]])),
-            chipBasso: battute(b => Array.from({ length: 8 }, (_, i) => [b * 16 + i * 2, RADICI[b] + (i % 2 ? 12 : 0), 2])),
-            chipCassa: battute(b => [[b * 16], [b * 16 + 8], [b * 16 + 10]]),
-            chipRullante: battute(b => [[b * 16 + 4], [b * 16 + 12]]),
-            chipHat: battute(b => [2, 6, 10, 14].map(i => [b * 16 + i]))
-          }
-        };
+        const giro = ({ accordi, radici, lead, arp = [0, 1, 2], cassa = [0, 8, 10], rullante = [4, 12], hat = [2, 6, 10, 14], riempi }) => sez(64, {
+          chipLead: lead,
+          chipArp: accordi.flatMap((acc, b) => Array.from({ length: 16 }, (_, i) => [b * 16 + i, acc[arp[i % arp.length]]])),
+          chipBasso: radici.flatMap((r, b) => Array.from({ length: 8 }, (_, i) => [b * 16 + i * 2, r + (i % 2 ? 12 : 0), 2])),
+          chipCassa: accordi.flatMap((_, b) => cassa.map(p => [b * 16 + p])),
+          chipRullante: [...accordi.flatMap((_, b) => rullante.map(p => [b * 16 + p])), ...(riempi ? ripeti(64, 1, 56).filter(([p]) => p % 16 !== 4 && p % 16 !== 12) : [])],
+          chipHat: accordi.flatMap((_, b) => hat.map(p => [b * 16 + p]))
+        });
+        const PRIMO = { accordi: [[81, 84, 88], [77, 81, 84], [79, 84, 88], [79, 83, 86]], radici: [45, 41, 48, 43] };   // la-, fa, do, sol
+        const BOSS = { accordi: [[74, 77, 81], [72, 76, 81], [72, 77, 81], [71, 76, 80]], radici: [50, 45, 41, 40] };    // re-, la-, fa, mi
+        const leadA = [[0, 69, 2], [2, 72, 2], [4, 76, 4], [8, 74, 2], [10, 72, 2], [12, 71, 4], [16, 69, 4], [20, 72, 2],
+          [22, 69, 2], [24, 65, 4], [28, 67, 4], [32, 76, 2], [34, 74, 2], [36, 72, 2], [38, 74, 2], [40, 76, 4],
+          [44, 79, 4], [48, 74, 4], [52, 71, 2], [54, 67, 2], [56, 69, 8]];
+        const A = giro({ ...PRIMO, lead: leadA });
+        const A2 = giro({ ...PRIMO, arp: [0, 1, 2, 1], cassa: [0, 8, 10, 14],
+          lead: [[0, 69, 2], [2, 72, 2], [4, 76, 2], [6, 79, 2], [8, 77, 4], [12, 76, 2], [14, 74, 2], [16, 72, 4], [20, 77, 2], [22, 76, 2], [24, 72, 4], [28, 69, 4],
+            [32, 67, 2], [34, 72, 2], [36, 76, 4], [40, 79, 2], [42, 77, 2], [44, 76, 4], [48, 74, 2], [50, 76, 2], [52, 77, 2], [54, 79, 2], [56, 83, 4], [60, 81, 2], [62, 79, 2]] });
+        const B = giro({ ...BOSS, cassa: [0, 4, 8, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14],
+          lead: [[0, 81, 3], [3, 77, 3], [6, 74, 2], [8, 77, 2], [10, 81, 2], [12, 86, 4], [16, 84, 3], [19, 81, 3], [22, 76, 2], [24, 72, 2], [26, 76, 2], [28, 81, 4],
+            [32, 84, 3], [35, 81, 3], [38, 77, 2], [40, 72, 2], [42, 77, 2], [44, 81, 4], [48, 80, 4], [52, 83, 4], [56, 88, 4], [60, 86, 2], [62, 83, 2]] });
+        const B2 = giro({ ...BOSS, arp: [0, 1, 2, 1], cassa: [0, 4, 8, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], riempi: true,
+          lead: [[0, 74, 2], [2, 77, 2], [4, 81, 2], [6, 86, 2], [8, 84, 4], [12, 81, 4], [16, 76, 2], [18, 81, 2], [20, 84, 2], [22, 88, 2], [24, 86, 4], [28, 84, 4],
+            [32, 81, 2], [34, 84, 2], [36, 89, 2], [38, 88, 2], [40, 86, 4], [44, 84, 4], [48, 83, 4], [52, 80, 4], [56, 76, 4], [60, 80, 2], [62, 83, 2]] });
+        // stacco: restano arpeggio e charleston, poi una salita velocissima che rilancia il giro
+        const stacco = sez(32, {
+          chipArp: [[81, 84, 88], [80, 83, 88]].flatMap((acc, b) => Array.from({ length: 16 }, (_, i) => [b * 16 + i, acc[i % 3]])),
+          chipHat: ripeti(32, 2),
+          chipCassa: [[0], [16]],
+          chipBasso: [[0, 45, 8], [16, 40, 8]],
+          chipLead: [[24, 69, 1], [25, 72, 1], [26, 76, 1], [27, 80, 1], [28, 81, 1], [29, 84, 1], [30, 88, 1], [31, 92, 1]]
+        });
+        const fine = giro({ ...PRIMO, arp: [0, 1, 2, 1], cassa: [0, 4, 8, 10, 12], riempi: true, lead: [...leadA.slice(0, -1), [56, 69, 4], [60, 76, 2], [62, 81, 2]] });
+        return cuci({ passo: 60 / 140 / 4 }, [A, A2, B, B2, stacco, A, fine]);
       })(),
-      // tema da film in re minore: archi che sostengono, ottoni eroici, timpani
+      // tema da film in re minore: archi che sostengono, ottoni eroici, timpani.
+      // Il tema, la sua risposta, lo sviluppo drammatico (sol minore, re minore, mi bemolle, la) e il finale grandioso
       primavisione: (() => {
-        const ACC = [[50, 57, 62, 65], [46, 53, 58, 62], [41, 53, 57, 60], [48, 55, 60, 64]];   // re-, si bemolle, fa, do
-        return {
-          passo: 60 / 92 / 2, passi: 32,
-          tracce: {
-            archi: ACC.map((acc, b) => [b * 8, acc, 8]),
-            ottoniFilm: [[0, 62, 3], [3, 57, 1], [4, 62, 2], [6, 64, 2], [8, 65, 4], [12, 64, 2], [14, 62, 2],
-              [16, 60, 3], [19, 57, 1], [20, 60, 2], [22, 62, 2], [24, 64, 6], [30, 69, 2]],
-            timpano: [[0, 38], [4, 45], [8, 34], [12, 41], [16, 41], [20, 36], [24, 36], [28, 43], [30, 43]]
-          }
-        };
+        const scena = (accordi, ottoni, timpani, extra = {}) => sez(32, {
+          archi: [...accordi.map((acc, b) => [b * 8, acc, 8]), ...(extra.violini || [])],
+          ottoniFilm: ottoni,
+          timpano: timpani
+        });
+        const TEMA = [[50, 57, 62, 65], [46, 53, 58, 62], [41, 53, 57, 60], [48, 55, 60, 64]];   // re-, si bemolle, fa, do
+        const ottoniA = [[0, 62, 3], [3, 57, 1], [4, 62, 2], [6, 64, 2], [8, 65, 4], [12, 64, 2], [14, 62, 2],
+          [16, 60, 3], [19, 57, 1], [20, 60, 2], [22, 62, 2], [24, 64, 6], [30, 69, 2]];
+        const timpaniA = [[0, 38], [4, 45], [8, 34], [12, 41], [16, 41], [20, 36], [24, 36], [28, 43], [30, 43]];
+        const A = scena(TEMA, ottoniA, timpaniA);
+        const A2 = scena(TEMA, [[0, 69, 3], [3, 65, 1], [4, 69, 2], [6, 70, 2], [8, 72, 4], [12, 70, 2], [14, 69, 2],
+          [16, 65, 3], [19, 60, 1], [20, 65, 2], [22, 67, 2], [24, 64, 4], [28, 67, 2], [30, 69, 2]], timpaniA,
+          { violini: [[0, 74, 8], [8, 74, 8], [16, 72, 8], [24, 76, 8]] });
+        const B = scena([[43, 55, 58, 62], [50, 57, 62, 65], [51, 58, 63, 67], [45, 57, 61, 64]],
+          [[0, 67, 2], [2, 70, 2], [4, 74, 4], [8, 74, 2], [10, 72, 2], [12, 69, 4], [16, 70, 3], [19, 67, 1], [20, 70, 2], [22, 72, 2], [24, 73, 6], [30, 76, 2]],
+          [[0, 43], [4, 38], [8, 38], [12, 45], [16, 39], [20, 46], [24, 45], [26, 45], [28, 45], [29, 45], [30, 45], [31, 45]],
+          { violini: [[16, 79, 8], [24, 81, 8]] });
+        const B2 = scena([[46, 53, 58, 62], [48, 55, 60, 64], [41, 53, 57, 60], [45, 57, 61, 64]],
+          [[0, 65, 2], [2, 70, 2], [4, 74, 4], [8, 72, 2], [10, 76, 2], [12, 79, 4], [16, 77, 6], [22, 76, 1], [23, 74, 1], [24, 73, 6], [30, 69, 2]],
+          [[0, 46], [4, 41], [8, 48], [12, 43], [16, 41], [20, 36], [24, 45], [28, 40], [30, 45]],
+          { violini: [[0, 74, 8], [8, 76, 8], [16, 77, 8], [24, 76, 8]] });
+        // finale: il tema con gli ottoni raddoppiati all'ottava bassa e un rullo di timpani
+        const fine = scena(TEMA, [...ottoniA, ...ottava(ottoniA, -12)], [...timpaniA.slice(0, -2), [28, 43], [29, 43], [30, 43], [31, 43]],
+          { violini: [[0, 74, 16], [16, 72, 8], [24, 76, 8]] });
+        return cuci({ passo: 60 / 92 / 2 }, [A, A2, B, B2, fine]);
       })(),
-      // valzer lento in la minore: theremin che scivola, organo e pendolo che ticchetta
-      ondanera: {
-        passo: 60 / 72, passi: 24,
-        tracce: {
-          organo: [[0, [57, 60, 64], 6], [6, [50, 57, 62], 6], [12, [52, 56, 59, 62], 6], [18, [57, 60, 64], 6]],
-          theremin: [[0, 69, 2, 64], [2, 72, 1, 69], [3, 71, 3, 72], [6, 74, 2, 71], [8, 72, 1, 74], [9, 69, 3, 72],
-            [12, 68, 2, 69], [14, 71, 1, 68], [15, 74, 3, 71], [18, 72, 2, 74], [20, 71, 1, 72], [21, 69, 3, 71]],
-          pendolo: Array.from({ length: 24 }, (_, i) => [i, i % 2 ? 0 : 1])
-        }
-      },
-      // bossa nova in fa maggiore, da ascensore di un ufficio dopo l'orario di chiusura
+      // valzer lento in la minore: theremin che scivola, organo e pendolo che ticchetta.
+      // Il tema, una seconda parte più inquietante (fa, re minore, si diminuito, mi) e il tema che torna un'ottava sopra
+      ondanera: (() => {
+        const pendolo = Array.from({ length: 24 }, (_, i) => [i, i % 2 ? 0 : 1]);
+        const temaA = [[0, 69, 2, 64], [2, 72, 1, 69], [3, 71, 3, 72], [6, 74, 2, 71], [8, 72, 1, 74], [9, 69, 3, 72],
+          [12, 68, 2, 69], [14, 71, 1, 68], [15, 74, 3, 71], [18, 72, 2, 74], [20, 71, 1, 72], [21, 69, 3, 71]];
+        const organoA = [[0, [57, 60, 64], 6], [6, [50, 57, 62], 6], [12, [52, 56, 59, 62], 6], [18, [57, 60, 64], 6]];
+        const A = sez(24, { organo: organoA, theremin: temaA, pendolo });
+        const B = sez(24, {
+          organo: [[0, [53, 57, 60], 6], [6, [50, 53, 57, 62], 6], [12, [47, 50, 53, 57], 6], [18, [52, 56, 59, 64], 6]],
+          theremin: [[0, 72, 3, 69], [3, 69, 3, 72], [6, 74, 2, 69], [8, 77, 1, 74], [9, 76, 3, 77], [12, 74, 2, 76], [14, 71, 1, 74], [15, 68, 3, 71], [18, 71, 3, 68], [21, 76, 3, 71]],
+          pendolo
+        });
+        const fine = sez(24, {
+          organo: [...organoA, [0, 45, 6], [6, 38, 6], [12, 40, 6], [18, 45, 6]],
+          theremin: [...temaA.slice(0, 6), ...temaA.slice(6).map(([p, n, d, s]) => [p, n + 12, d, s + 12])],
+          pendolo
+        });
+        return cuci({ passo: 60 / 72 }, [A, B, fine]);
+      })(),
+      // bossa nova in fa maggiore, da ascensore di un ufficio dopo l'orario di chiusura.
+      // Il giro, una variazione del flauto, il ponte di otto battute (si bemolle, la minore, re, sol minore, do), il giro e un'improvvisazione
       fuoriorario: (() => {
+        const bossa = (accordi, radici, flauto) => sez(accordi.length * 16, {
+          pianoBossa: accordi.flatMap((acc, b) => [0, 3, 6, 10, 12].map(p => [b * 16 + p, acc])),
+          bassoBossa: radici.flatMap(([r, q], b) => [[b * 16, r, 5], [b * 16 + 6, q, 2], [b * 16 + 8, r, 5], [b * 16 + 14, q, 2]]),
+          flauto,
+          shaker: accordi.flatMap((_, b) => Array.from({ length: 16 }, (_, i) => [b * 16 + i, i % 2 ? 0 : 1])),
+          legnetto: accordi.flatMap((_, b) => [3, 6, 10, 12].map(p => [b * 16 + p]))
+        });
         const ACC = [[53, 57, 60, 64], [55, 58, 62, 65], [57, 60, 64, 67], [55, 58, 60, 64]];   // fa7+, sol-7, la-7, do7
         const RAD = [[41, 48], [43, 50], [45, 52], [36, 43]];
-        const battute = fn => [0, 1, 2, 3].flatMap(fn);
-        return {
-          passo: 60 / 128 / 4, passi: 64,
-          tracce: {
-            pianoBossa: battute(b => [0, 3, 6, 10, 12].map(p => [b * 16 + p, ACC[b]])),
-            bassoBossa: battute(b => [[b * 16, RAD[b][0], 5], [b * 16 + 6, RAD[b][1], 2], [b * 16 + 8, RAD[b][0], 5], [b * 16 + 14, RAD[b][1], 2]]),
-            flauto: [[2, 72, 3], [6, 69, 2], [8, 67, 6], [18, 70, 3], [22, 69, 2], [24, 65, 6],
-              [34, 72, 2], [36, 76, 4], [40, 74, 2], [42, 72, 4], [50, 70, 2], [52, 69, 2], [54, 67, 2], [56, 65, 8]],
-            shaker: battute(b => Array.from({ length: 16 }, (_, i) => [b * 16 + i, i % 2 ? 0 : 1])),
-            legnetto: battute(b => [3, 6, 10, 12].map(p => [b * 16 + p]))
-          }
-        };
+        const A = bossa(ACC, RAD, [[2, 72, 3], [6, 69, 2], [8, 67, 6], [18, 70, 3], [22, 69, 2], [24, 65, 6],
+          [34, 72, 2], [36, 76, 4], [40, 74, 2], [42, 72, 4], [50, 70, 2], [52, 69, 2], [54, 67, 2], [56, 65, 8]]);
+        const A2 = bossa(ACC, RAD, [[0, 77, 3], [4, 76, 2], [6, 74, 2], [8, 72, 6], [16, 74, 2], [18, 72, 2], [20, 70, 4], [24, 74, 6],
+          [32, 76, 3], [36, 72, 2], [38, 69, 2], [40, 72, 6], [48, 70, 2], [50, 72, 2], [52, 74, 2], [54, 76, 2], [56, 77, 6], [62, 72, 2]]);
+        const B = bossa(
+          [[53, 57, 58, 62], [55, 58, 61, 65], [55, 57, 60, 64], [54, 57, 60, 62], [53, 55, 58, 62], [52, 55, 58, 62], [53, 57, 60, 64], [55, 58, 60, 64]],
+          [[46, 41], [46, 41], [45, 52], [38, 45], [43, 50], [36, 43], [41, 48], [36, 43]],
+          [[2, 74, 3], [6, 72, 2], [8, 69, 6], [18, 73, 3], [22, 72, 2], [24, 67, 6], [34, 72, 2], [36, 76, 4], [40, 74, 2], [42, 72, 4],
+            [50, 72, 2], [52, 69, 2], [54, 66, 2], [56, 69, 8], [66, 70, 3], [70, 69, 2], [72, 65, 6], [82, 67, 2], [84, 70, 4], [88, 72, 2], [90, 76, 4],
+            [96, 77, 6], [104, 76, 2], [106, 72, 6], [114, 70, 2], [116, 69, 2], [118, 67, 2], [120, 64, 6]]);
+        const fine = bossa(ACC, RAD, [[0, 72, 2], [2, 77, 2], [4, 81, 2], [6, 79, 2], [8, 77, 2], [10, 76, 2], [12, 72, 4], [16, 74, 2], [18, 77, 2], [20, 79, 2], [22, 77, 2],
+          [24, 74, 4], [28, 70, 4], [32, 72, 2], [34, 76, 2], [36, 79, 2], [38, 76, 2], [40, 72, 4], [44, 69, 4], [48, 70, 3], [52, 72, 2], [54, 67, 2], [56, 64, 4], [60, 65, 4]]);
+        return cuci({ passo: 60 / 128 / 4 }, [A, A2, B, A, fine]);
       })()
     };
     // trasforma le tracce in un elenco di eventi per ogni passo
     Object.values(BRANI).forEach(brano => {
       brano.eventi = Array.from({ length: brano.passi }, () => []);
       Object.entries(brano.tracce).forEach(([strumento, note]) => note.forEach(([passo, nota, durata = 1, scivola]) => {
-        brano.eventi[passo].push({ strumento, nota, durata: durata * brano.passo, scivola });
+        if (passo >= 0 && passo < brano.passi) brano.eventi[passo].push({ strumento, nota, durata: durata * brano.passo, scivola });
       }));
     });
 
@@ -5758,7 +6113,7 @@ Capriccio | Bisogno
     }
 
     // i suoni importanti abbassano per un attimo la musica, così si sentono bene
-    const ABBASSA = { esito: 2, centro: 2, mancato: 1.4, trovato: 1.4, bonus: 1.2, turnoExtra: 1.4, agganciato: 1.2, disturbatori: 3.2 };
+    const ABBASSA = { esito: 2, centro: 2, mancato: 1.4, trovato: 1.4, bonus: 1.2, turnoExtra: 1.4, agganciato: 1.2, disturbatori: 3.9 };
     // Equilibrio tra i suoni: i tasti di tutti i giorni un po' più discreti, i segnali importanti
     // (passa il telefono, cambio di Conduttore, frequenza che si apre, errori) un po' più presenti
     const LIVELLI_SUONI = { tasto: 0.75, tastoGrande: 0.75, conferma: 0.8, lato: 0.8, nascondi: 0.85, interruttore: 0.85,
@@ -5812,7 +6167,7 @@ Capriccio | Bisogno
     centro: [40, 50, 80],                       // bersaglio centrato
     vittoria: [60, 70, 60, 70, 160],
     pareggio: [80, 90, 80],
-    disturbatori: [30, 40, 15, 30, 15, 260, 120, 60, 40, 60, 40, 60, 220],   // due colpi, una scarica, i passi del motivetto e l'accordo finale
+    disturbatori: [30, 170, 30, 170, 60, 80, 8, 70, 8, 55, 10, 45, 10, 35, 12, 30, 15, 25, 20, 367, 18, 202, 18, 342, 18, 122, 18, 202, 18, 122, 18, 342, 25, 335, 160],   // due colpi, l'interferenza che si infittisce, i passi del motivetto e l'accordo finale
     collab0: [140],
     collab1: [50, 60, 90],
     collab2: [40, 50, 40, 50, 140],
