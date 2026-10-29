@@ -3719,6 +3719,26 @@
   .cp-azioni .tasto-ambra { height: 44px; padding: 0 22px; font-size: 14px; }
   .cp-azioni .tasto-ambra:disabled { opacity: .55; box-shadow: none; transform: none; }
   .cp-stato { font-size: clamp(12.5px, 3.8cqh, 14px); font-weight: 600; color: var(--tenue); text-wrap: balance; max-width: 40ch; }
+  /* «Usa» bloccato in questo turno: bordo rosso */
+  .cp-azioni .tasto-ambra.bloccato:disabled { opacity: 1; color: var(--tenue); box-shadow: inset 0 0 0 2.5px var(--corallo), 0 5px 0 var(--tasto-ombra); }
+  /* carta già usata: niente tasto, solo la scritta al centro, ben leggibile */
+  .cp-usata { flex-basis: 100%; margin: 0; padding: 9px 18px; border-radius: 12px; text-align: center; text-wrap: balance;
+    font-size: clamp(14px, 4.4cqh, 17px); font-weight: 800; letter-spacing: .01em; color: var(--inchiostro);
+    background: color-mix(in srgb, var(--inchiostro) 7%, transparent); box-shadow: inset 0 0 0 2px var(--bordo); }
+  /* carte sempre attive: un cartellino luminoso in alto a destra della tessera */
+  .cp-sempre { position: absolute; top: 0; right: 16px; transform: translateY(-55%); display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px 6px 10px; border-radius: 999px; white-space: nowrap; color: #2A1C00; background: var(--zona-oro);
+    font: 400 clamp(11.5px, 3.6cqh, 14px)/1 "Michroma", Verdana, sans-serif; letter-spacing: .04em; text-transform: uppercase;
+    box-shadow: 0 0 0 2px var(--superficie), 0 0 18px 2px color-mix(in srgb, var(--zona-oro) 75%, transparent);
+    animation: cp-bagliore 2.2s ease-in-out .6s infinite; }
+  .cp-sempre svg { width: 1.25em; height: 1.25em; flex: none; }
+  .cp-tessera.con-sempre { margin-top: 16px; }
+  @keyframes cp-bagliore { 50% { box-shadow: 0 0 0 2px var(--superficie), 0 0 30px 7px color-mix(in srgb, var(--zona-oro) 90%, transparent); } }
+  /* il tasto della carta: l'icona pulsa quando il potere si può usare adesso; senza carta il tasto dice «no» */
+  .turno .tasto-carta.pronta svg { animation: carta-pronta 1.3s ease-in-out infinite; }
+  @keyframes carta-pronta { 0%, 100% { transform: scale(1); filter: none; } 50% { transform: scale(1.32); filter: drop-shadow(0 0 5px var(--zona-oro)); } }
+  .turno .tasto-carta.no { animation: carta-no .45s ease-in-out; }
+  @keyframes carta-no { 15% { transform: translateX(-7px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-4px); } 75% { transform: translateX(3px); } }
   .cp-scelta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; flex-basis: 100%; }
   .cp-scelta .btn-piccolo { height: 36px; padding: 0 14px; font-weight: 700; color: var(--inchiostro); }
   #cp-chiudi { color: var(--inchiostro); }
@@ -3731,7 +3751,8 @@
     .cp-azioni .tasto-ambra { height: 38px; }
     #cp-chiudi { height: 34px; }
   }
-  @media (prefers-reduced-motion: reduce) { .cp-tessera, .passaggio .avviso-carta { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .cp-tessera, .passaggio .avviso-carta, .cp-sempre, .turno .tasto-carta.no { animation: none; }
+    .turno .tasto-carta.pronta svg { animation: none; filter: drop-shadow(0 0 5px var(--zona-oro)); } }
   /* sulla scala: i segni anonimi (Decodifica), il punto prima del Riavvolgimento, la freccia della Radiobussola */
   .segno-potere { stroke-width: 3; stroke-linecap: round; pointer-events: none; }
   .segno-decodifica { stroke: var(--viola); stroke-dasharray: 2 7; opacity: .95; }
@@ -5578,7 +5599,28 @@ Capriccio | Bisogno
         tono({ f: NOTA(n), tipo: 'sine', t: dopoTra(T), dur: d * 0.9, vol: 0.06, att: 0.008, dest: bus });
       },
       rhodes: (n, T, d, bus) => campana({ f: NOTA(n), t: dopoTra(T), dur: Math.max(d, 0.6), vol: 0.028, rapporto: 1, indice: 1.1, dest: bus }),
-      sospiro: (n, T, d, bus, ev) => tono({ f: NOTA(n), f2: ev && ev.scivola ? NOTA(ev.scivola) : undefined, tipo: 'triangle', t: dopoTra(T), dur: d, vol: 0.045, att: 0.08, vibrato: 5, lp: 2400, dest: bus }),
+      // sax caldo e "ammiccante": attacca da sotto e scivola sulla nota, con un filo di fiato e il vibrato sulle note lunghe
+      // (con "scivola" la nota parte da quell'altezza e ci arriva piano piano, come un bending)
+      sax: (n, T, d, bus, ev) => {
+        const T0 = ctx.currentTime + dopoTra(T), f = NOTA(n), dur = Math.max(d, 0.12), fine = T0 + dur;
+        const da = ev && ev.scivola ? NOTA(ev.scivola) : f * 0.972, arriva = T0 + (ev && ev.scivola ? Math.min(0.2, dur * 0.5) : Math.min(0.07, dur * 0.4));
+        const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 1.4;
+        fl.frequency.setValueAtTime(650, T0); fl.frequency.linearRampToValueAtTime(2300, T0 + 0.06); fl.frequency.exponentialRampToValueAtTime(1300, fine);
+        const g = ctx.createGain(), v = 0.026;
+        g.gain.setValueAtTime(0.0001, T0); g.gain.linearRampToValueAtTime(v, T0 + 0.025);
+        g.gain.linearRampToValueAtTime(v * 0.78, T0 + Math.min(0.25, dur * 0.6)); g.gain.setValueAtTime(v * 0.78, Math.max(T0 + 0.03, fine - 0.06));
+        g.gain.linearRampToValueAtTime(0.0001, fine);
+        const vib = ctx.createOscillator(), vg = ctx.createGain(); vib.frequency.value = 5.2;
+        vg.gain.setValueAtTime(0, T0); vg.gain.setValueAtTime(0, T0 + 0.22); vg.gain.linearRampToValueAtTime(dur > 0.4 ? f * 0.013 : 0, T0 + 0.5); vib.connect(vg);
+        [['sawtooth', 0, 1], ['square', 7, 0.35]].forEach(([tipo, det, liv]) => {
+          const o = ctx.createOscillator(), og = ctx.createGain(); o.type = tipo; o.detune.value = det; og.gain.value = liv;
+          o.frequency.setValueAtTime(da, T0); o.frequency.exponentialRampToValueAtTime(f, arriva); vg.connect(o.frequency);
+          o.connect(og); og.connect(fl); o.start(T0); o.stop(fine + 0.05);
+        });
+        vib.start(T0); vib.stop(fine + 0.05);
+        fl.connect(g); g.connect(bus);
+        fruscio({ t: dopoTra(T), dur: 0.09, vol: 0.008, f: 2600, q: 1.2, att: 0.01, dest: bus });     // il fiato
+      },
       cassaMorbida: (n, T, d, bus) => tono({ f: 100, f2: 42, t: dopoTra(T), dur: 0.2, vol: 0.11, att: 0.003, dest: bus }),
       rullanteMorbido: (n, T, d, bus) => { fruscio({ t: dopoTra(T), dur: 0.1, vol: 0.05, f: 2000, q: 0.8, att: 0.003, dest: bus }); tono({ f: 210, t: dopoTra(T), dur: 0.05, vol: 0.025, att: 0.002, dest: bus }); },
       charlestonForte: (n, T, d, bus) => fruscio({ t: dopoTra(T), dur: 0.035, vol: 0.035, tipo: 'highpass', f: 7000, q: 0.7, att: 0.002, dest: bus }),
@@ -5820,7 +5862,7 @@ Capriccio | Bisogno
         return cuci({ passo: 60 / 104 / 2 }, [A, A2, B, B2, sospeso, A, fine]);
       })(),
       // "piccante": groove funk lento in mi dorico, chitarra wah-wah "bau-ciccà-uau-uau",
-      // basso morbido e sincopato, accordi di piano Rhodes e un sospiro di synth.
+      // basso morbido e sincopato, accordi di piano Rhodes e un sax ammiccante che sale e scivola sulle note.
       // Giro, variazione con domanda e risposta, ponte (do settima maggiore, si settima), giro, stacco di basso e batteria, ripresa
       mezzanotte: (() => {
         const EM = [64, 67, 71], LA = [61, 64, 67];                       // accordi della chitarra
@@ -5843,17 +5885,18 @@ Capriccio | Bisogno
           graffio: battute(4, b => graffi(b)),
           bassoFunk: [...basso, ...basso.map(([p, n, d]) => [p + 32, n, d])],
           rhodes: rhodes(RH),
-          sospiro: [[44, 71, 2], [46, 74, 2], [48, 76, 6, 74], [56, 79, 2], [58, 78, 2], [60, 76, 4]],
+          sax: [[36, 76, 1], [37, 79, 1], [38, 81, 1], [39, 82, 1], [40, 83, 5, 81], [46, 81, 1], [47, 79, 1], [48, 81, 3, 79], [52, 79, 1], [53, 76, 2], [56, 79, 1], [57, 81, 1], [58, 83, 6, 82]],
           ...batteria(4)
         });
-        // variazione: la chitarra cambia ritmo, il sospiro fa domanda e risposta e il basso chiude con una scaletta
+        // variazione: la chitarra cambia ritmo, il sax fa domanda e risposta (fino al mi acuto) e il basso chiude con una scaletta
         const ritmo2 = [[0, 2], [4, 2], [7, 2], [10, 3], [14, 1]];
         const A2 = sez(64, {
           wah: [...battuta(0, EM, ritmo2), ...battuta(1, LA, ritmo2), ...battuta(2, EM, ritmo2), ...battuta(3, LA, ritmo2)],
           graffio: battute(4, b => graffi(b, [2, 5, 9, 12, 15])),
           bassoFunk: [...basso, ...basso.slice(0, -2).map(([p, n, d]) => [p + 32, n, d]), [60, 52, 1], [61, 50, 1], [62, 47, 1], [63, 43, 1]],
           rhodes: rhodes(RH),
-          sospiro: [[8, 79, 2], [10, 76, 2], [12, 74, 4, 71], [40, 76, 2], [42, 79, 2], [44, 81, 6, 79], [56, 78, 2], [58, 76, 2], [60, 74, 4, 71]],
+          sax: [[0, 76, 3, 74], [3, 79, 1], [4, 76, 1], [6, 74, 1], [7, 76, 5, 75], [24, 79, 1], [25, 81, 1], [26, 83, 2], [28, 85, 4, 83],
+            [32, 83, 1], [33, 81, 1], [34, 79, 1], [35, 81, 1], [36, 83, 6, 81], [52, 88, 2, 86], [54, 86, 1], [55, 83, 1], [56, 85, 2], [58, 83, 1], [59, 81, 1], [60, 79, 2], [62, 81, 2]],
           ...batteria(4)
         });
         // ponte: do settima maggiore e si settima, la svolta più "notturna" del brano
@@ -5865,21 +5908,22 @@ Capriccio | Bisogno
           graffio: battute(4, b => graffi(b)),
           bassoFunk: [...bassoPonte, ...bassoPonte.slice(0, -2).map(([p, n, d]) => [p + 32, n, d]), [60, 47, 1], [61, 49, 1], [62, 50, 1], [63, 51, 1]],
           rhodes: rhodes([[55, 60, 64, 71], [54, 59, 63, 69], [55, 60, 64, 71], [54, 59, 63, 69]]),
-          sospiro: [[0, 79, 6, 76], [8, 76, 2], [10, 79, 2], [12, 83, 4, 81], [16, 81, 6, 78], [24, 78, 2], [26, 75, 2], [28, 74, 4, 71],
-            [32, 72, 6, 71], [40, 76, 2], [42, 79, 2], [44, 84, 6, 83], [52, 81, 2], [54, 78, 2], [56, 75, 4], [60, 78, 4, 76]],
+          sax: [[0, 79, 6, 77], [8, 83, 2], [10, 84, 2], [12, 83, 2], [14, 79, 2], [16, 81, 3], [19, 78, 1], [20, 75, 4, 74], [24, 78, 2], [26, 81, 2], [28, 83, 4],
+            [32, 84, 2], [34, 83, 1], [35, 79, 1], [36, 76, 4, 75], [40, 79, 2], [42, 83, 2], [44, 86, 4, 84],
+            [48, 87, 4, 86], [52, 86, 1], [53, 84, 1], [54, 83, 2], [56, 81, 2], [58, 78, 2], [60, 75, 1], [61, 76, 1], [62, 78, 1], [63, 79, 1]],
           ...batteria(4)
         });
-        // stacco: restano basso e batteria, la chitarra graffia e il sospiro rilancia
+        // stacco: restano basso e batteria, la chitarra graffia e il sax rilancia con una scala blues
         const stacco = sez(32, {
           bassoFunk: basso,
           graffio: [[3], [4], [12], [13], [19], [20], [22], [24], [26], [27], [28], [29], [30], [31]],
           rhodes: [[0, RH[0], 4]],
-          sospiro: [[24, 71, 2], [26, 74, 2], [28, 76, 4, 79]],
+          sax: [[24, 76, 1], [25, 79, 1], [26, 81, 1], [27, 82, 1], [28, 83, 4, 81]],
           ...batteria(2)
         });
         const fine = sez(64, {
           ...A.tracce,
-          sospiro: [[12, 83, 4, 81], [28, 79, 4, 76], ...A.tracce.sospiro]
+          sax: [[8, 83, 2], [10, 81, 1], [11, 79, 1], [12, 81, 4, 79], [24, 85, 4, 83], ...A.tracce.sax]
         });
         return cuci({ passo: 60 / 96 / 4, swing: 0.12 }, [A, A2, B, A, stacco, fine]);
       })(),
@@ -6197,6 +6241,8 @@ Capriccio | Bisogno
     const b = e.target.closest('button');
     if (!b || b.disabled) return;
     if (b.matches('.tasto.banda')) return;
+    // la carta potere è sempre muta: chi ci passa più tempo o la usa non deve farsi sentire
+    if (b.closest('#carta-potere, .tasto-carta')) return;
     if (b.matches('.tasto')) suona('tastoGrande');
     else if (b.matches('.tasto-ambra, #pass-ok')) suona('tasto');
     else if (b.matches('.btn-piccolo, .tastino, .ingranaggio')) suona('clic');
@@ -9820,6 +9866,8 @@ Capriccio | Bisogno
     decodifica: { nome: 'Decodifica', squadra: 'O', durata: 'una', grandi: true, testo: "Quando fai il Sintonizzatore, vedi sulla scala dove avevano messo la lancetta i Cercafrequenze di quel turno, senza vedere però i loro nomi. Utile per restringere i sospetti su pochi giocatori." }
   };
   const ICONA_CARTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M13 7l-3 5h4l-3 5"/></svg>';
+  // «sempre attiva»: il simbolo dell'infinito
+  const ICONA_SEMPRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12c-2-2.6-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.4 5.5-4zm0 0c2 2.6 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.4-5.5 4z"/></svg>';
   const ICONE_POTERI = {"controfase": "<path d=\"M4 8h15m-3.5-3.5L19 8l-3.5 3.5\"/><path d=\"M20 16H5m3.5-3.5L5 16l3.5 3.5\"/>", "intercettazione": "<path d=\"M4 15v-3a8 8 0 0 1 16 0v3\"/><path d=\"M4 14h3.5v7H5.5A1.5 1.5 0 0 1 4 19.5z\"/><path d=\"M20 14h-3.5v7h2a1.5 1.5 0 0 0 1.5-1.5z\"/>", "eco": "<circle cx=\"12\" cy=\"12\" r=\"1.6\"/><path d=\"M8.6 8.6a4.8 4.8 0 0 0 0 6.8\"/><path d=\"M15.4 8.6a4.8 4.8 0 0 1 0 6.8\"/><path d=\"M5.5 5.5a9.2 9.2 0 0 0 0 13\"/><path d=\"M18.5 5.5a9.2 9.2 0 0 1 0 13\"/>", "deriva": "<path d=\"M3 8.5h10.5a3 3 0 1 0-3-3\"/><path d=\"M3 15.5h14.5a3 3 0 1 1-3 3\"/><path d=\"M3 12h7\"/>", "fuoribanda": "<path d=\"M10.5 7H9v10h1.5\"/><path d=\"M13.5 7H15v10h-1.5\"/><path d=\"M6 12H2m2.4-2.4L2 12l2.4 2.4\"/><path d=\"M18 12h4m-2.4-2.4L22 12l-2.4 2.4\"/>", "schermatura": "<path d=\"M12 3l7.5 3v5.5c0 4.8-3.2 8.3-7.5 9.8-4.3-1.5-7.5-5-7.5-9.8V6z\"/><path d=\"M12 7.5v10\"/>", "rilevatore": "<path d=\"M5 20v-3\"/><path d=\"M10 20v-6.5\"/><path d=\"M15 20v-10\"/><path d=\"M20 20V6.5\"/>", "amplificatore": "<path d=\"M3.5 9.5v5h3.5l8 5v-15l-8 5z\"/><path d=\"M18.5 9a4 4 0 0 1 0 6\"/>", "riavvolgimento": "<path d=\"M11.5 6l-8 6 8 6z\"/><path d=\"M20.5 6l-8 6 8 6z\"/>", "radiobussola": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M15.8 8.2l-2.2 5.4-5.4 2.2 2.2-5.4z\"/>", "tracciamento": "<circle cx=\"12\" cy=\"12\" r=\"7.5\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4\"/>", "decodifica": "<circle cx=\"7.5\" cy=\"16.5\" r=\"4\"/><path d=\"M10.4 13.6 20 4\"/><path d=\"M16.5 7.5l2.5 2.5\"/><path d=\"M14 10l2 2\"/>"};
   const iconaPotere = id => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONE_POTERI[id] + '</svg>';
   function assegnaPoteri(n, disturbatori) {
@@ -9864,7 +9912,7 @@ Capriccio | Bisogno
   function potereUsabile(p, c, ctx) {
     const no = motivo => ({ ok: false, motivo });
     if (!ctx || ctx.chi !== c.chi) return no('');
-    if (POTERI[c.id].durata === 'sempre') return no('Sempre attiva: funziona da sola.');
+    if (POTERI[c.id].durata === 'sempre') return no('Sempre attiva.');
     if (c.usata) return no('L’hai già usata.');
     const { ruolo, a } = ctx, n = p.giocatori.length;
     const dopoDiMe = () => ctx.ruolo === 'conduttore' ? p.sintonizzatori.map(chi => ({ chi, tipo: 'ritocco' })) : p.azioni.slice(p.passo + 1);
@@ -9930,7 +9978,12 @@ Capriccio | Bisogno
     tessera.innerHTML = '<span class="cp-icona">' + (c ? iconaPotere(c.id) : ICONA_CARTA) + '</span>';
     if (c) {
       const P = POTERI[c.id];
-      tessera.append(el('b', 'cp-nome', P.nome), el('span', 'cp-durata', P.durata === 'sempre' ? 'Sempre attiva' : 'Una volta per partita'), el('p', 'cp-testo', P.testo));
+      if (P.durata === 'sempre') {
+        const sempre = el('span', 'cp-sempre');
+        sempre.innerHTML = ICONA_SEMPRE; sempre.append('Sempre attiva');
+        tessera.classList.add('con-sempre');
+        tessera.append(sempre, el('b', 'cp-nome', P.nome), el('p', 'cp-testo', P.testo));
+      } else tessera.append(el('b', 'cp-nome', P.nome), el('span', 'cp-durata', 'Una volta per partita'), el('p', 'cp-testo', P.testo));
     } else {
       tessera.append(el('b', 'cp-nome', 'Nessuna carta potere'), el('span', 'cp-durata', 'In questa partita'), el('p', 'cp-testo', 'Le carte potere sono solo due: una per un Operatore e una per un Disturbatore. Questa volta non è toccata a te.'));
     }
@@ -9938,9 +9991,10 @@ Capriccio | Bisogno
     const risultato = el('p', 'cp-risultato'); risultato.hidden = true; corpo.append(risultato);
     if (c && POTERI[c.id].durata === 'una') {
       const u = potereUsabile(p, c, ctx);
-      const usaSpento = motivo => { const b = bottone('Usa', () => {}, 'tasto-ambra piccolo'); b.disabled = true; azioni.append(b, el('span', 'cp-stato', motivo)); };
-      if (c.usata && c.id === 'intercettazione' && !c.spiaFatta) usaSpento('Attivata: vedrai la frequenza nascosta nella prossima manche in cui muovi la lancetta.');
-      else if (c.usata) usaSpento(c.usi.length ? `Già usata nella ${c.usi[0]}\u00aa manche` : 'Già usata');
+      const usaSpento = motivo => { const b = bottone('Usa', () => {}, 'tasto-ambra piccolo bloccato'); b.disabled = true; azioni.append(b, el('span', 'cp-stato', motivo)); };
+      const usata = testo => azioni.append(el('p', 'cp-usata', testo));
+      if (c.usata && c.id === 'intercettazione' && !c.spiaFatta) usata('Attivata: vedrai la frequenza nascosta nella prossima manche in cui muovi la lancetta.');
+      else if (c.usata) usata(c.usi.length ? `Già usata nella ${c.usi[0]}\u00aa manche` : 'Già usata');
       else if (!u.ok) usaSpento(u.motivo || 'Non si può usare adesso.');
       else if (c.id === 'deriva') {
         azioni.append(bottone('Usa: verso sinistra', () => usaPotere(c, ctx, -1), 'tasto-ambra piccolo'), bottone('Usa: verso destra', () => usaPotere(c, ctx, 1), 'tasto-ambra piccolo'));
@@ -9952,11 +10006,11 @@ Capriccio | Bisogno
           risultato.hidden = false;
           risultato.textContent = `${nomeDi(t)}: ${giudizioTraccia(r.media)} (${r.volte === 1 ? 'una volta' : `media di ${r.volte} volte`} da Cercafrequenze)`;
           scelta.remove();
-          azioni.replaceChildren(el('span', 'cp-stato', 'Usata'));
+          azioni.replaceChildren(el('p', 'cp-usata', `Già usata nella ${p.manche}\u00aa manche`));
         }, 'btn-piccolo cp-nome-btn')));
         azioni.append(el('span', 'cp-stato', 'Usa: scegli un giocatore'), scelta);
       } else azioni.append(bottone('Usa', () => usaPotere(c, ctx), 'tasto-ambra piccolo'));
-    } else if (c) azioni.append(el('span', 'cp-stato', 'Funziona da sola'));
+    }
     document.getElementById('cp-chiudi').onclick = chiudiCarta;
     finestraCarta.hidden = false;      // in silenzio: aprire la carta non deve farsi sentire
   }
@@ -10034,7 +10088,15 @@ Capriccio | Bisogno
     }
     const b = el('button', 'btn-piccolo tasto-carta');
     b.type = 'button'; b.innerHTML = ICONA_CARTA; b.append('La tua carta');
-    b.addEventListener('click', () => apriCarta(ctx.chi));
+    // l'icona pulsa finché il potere si può usare in questo turno, così non ce se ne dimentica
+    if (c && POTERI[c.id].durata === 'una' && !c.usata && potereUsabile(p, c, ctx).ok) b.classList.add('pronta');
+    // chi non ha la carta vede lo stesso tasto (da fuori non si capisce), ma toccandolo non si apre nulla: il tasto fa «no»
+    b.addEventListener('click', () => {
+      if (c) return apriCarta(ctx.chi);
+      b.classList.remove('no'); void b.offsetWidth; b.classList.add('no');
+      vibra([18, 60, 18]);
+    });
+    b.addEventListener('animationend', e => { if (e.animationName === 'carta-no') b.classList.remove('no'); });
     box.append(b);
   }
 
