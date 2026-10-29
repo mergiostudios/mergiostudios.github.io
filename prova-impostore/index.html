@@ -5538,42 +5538,52 @@ Capriccio | Bisogno
       livelloBase = LIVELLO_MUSICA * fattore * silenzioMusica;
       if (!musica) return;
       const g = musica.bus.gain, T = ctx.currentTime;
-      if (T < rientroLento) lento = Math.max(lento || 0.5, 2.3);     // mentre si torna in onda la risalita resta lenta
+      if (T < rientroLento) return;     // c'è una transizione di silenzio radio in corso: la sua curva arriva da sola al livello giusto
       g.cancelScheduledValues(T);
       // se la stazione sta ancora per agganciarsi, il volume sale solo quando arriva
       g.setTargetAtTime(Math.max(livelloBase, 0.0001), Math.max(T, musica.inizio - 0.05), lento || 0.5);
     }
     let fattoreMusica = 1, rientroLento = 0;
-    // «Silenzio radio» e «In onda»: la stazione non si spegne di colpo, perde il segnale.
-    // Entrando nel silenzio la musica si fa ovattata e lontana mentre sale un brusio di interferenze (fruscio che va e viene,
-    // scariche, voci lontane), poi resta solo il silenzio (circa 7 secondi). Tornando in onda il brusio arriva per primo,
-    // un fischio si aggancia e la musica riemerge piano piano dal disturbo, prima ovattata e poi limpida (circa 10 secondi).
+    // «Silenzio radio» e «In onda»: la stazione non si spegne di colpo, perde il segnale (e poi lo ritrova),
+    // tutto nel tempo in cui la scritta resta in alto. Un solo movimento continuo: la musica ondeggia come un segnale
+    // che va e viene, si fa ovattata e svanisce mentre un fruscio morbido sale e poi si spegne con lei.
+    // Al ritorno il fruscio arriva per primo e la musica riemerge da dentro, prima ovattata e poi limpida.
     // «subito»: si esce dalla partita, niente effetti
-    function silenzio(attivo, subito) {
-      silenzioMusica = attivo ? 0 : 1;
+    const liscia = x => x * x * (3 - 2 * x);                       // curva morbida da 0 a 1
+    const curvaDa = (da, a, forma) => Float32Array.from({ length: 64 }, (_, i) => da + (a - da) * forma(i / 63));
+    function silenzio(attivo, subito, durata) {
+      const nuovo = attivo ? 0 : 1;
+      if (!subito && nuovo === silenzioMusica) return;
+      silenzioMusica = nuovo;
       if (!ctx) return;
       const T = ctx.currentTime;
-      if (subito) { rientroLento = 0; spegniBrusio(); livelloMusica(fattoreMusica, 0.5); if (musica) apriFiltri(musica, T, 0.4); return; }
-      if (!attivo) rientroLento = T + 10;
       livelloBase = LIVELLO_MUSICA * fattoreMusica * silenzioMusica;
-      brusio(attivo);
+      if (subito) { rientroLento = 0; spegniBrusio(); livelloMusica(fattoreMusica, 0.5); if (musica) apriFiltri(musica, T, 0.4); return; }
+      const D = Math.max(1.5, durata || (attivo ? 4.2 : 6.5));
+      rientroLento = T + D;
       if (!musica) return;
-      const g = musica.bus.gain, alto = musica.uscita.frequency, basso = musica.filtroBasso.frequency;
-      [g, alto, basso].forEach(x => { x.cancelScheduledValues(T); x.setValueAtTime(x.value, T); });
+      brusio(attivo, D);
+      const m = musica, g = m.bus.gain, alto = m.uscita.frequency, basso = m.filtroBasso.frequency;
+      [g, alto, basso].forEach(x => { x.cancelScheduledValues(T); });
       if (attivo) {
-        g.setTargetAtTime(0.0001, T + 0.6, 1.5);
-        alto.exponentialRampToValueAtTime(420, T + 5.5);
-        basso.exponentialRampToValueAtTime(520, T + 5.5);
+        g.setValueCurveAtTime(curvaDa(Math.max(g.value, 0.0001), 0.0001, x => liscia(x)), T, D * 0.95);
+        alto.setValueCurveAtTime(curvaDa(alto.value, 450, x => 1 - Math.pow(1 - x, 1.6)), T, D * 0.9);
+        basso.setValueCurveAtTime(curvaDa(basso.value, 480, x => x), T, D * 0.9);
       } else {
-        alto.setValueAtTime(420, T); basso.setValueAtTime(520, T);
-        alto.setValueAtTime(420, T + 1.6); basso.setValueAtTime(520, T + 1.6);
-        g.setTargetAtTime(Math.max(livelloBase, 0.0001), T + 1.6, 2.3);
-        alto.exponentialRampToValueAtTime(5200, T + 9);
-        basso.exponentialRampToValueAtTime(90, T + 7.5);
+        // la musica comincia a riemergere quando il fruscio è già arrivato
+        const da = T + D * 0.15, R = D * 0.8;
+        g.setValueAtTime(0.0001, T); alto.setValueAtTime(450, T); basso.setValueAtTime(480, T);
+        g.setValueCurveAtTime(curvaDa(0.0001, Math.max(livelloBase, 0.0001), x => liscia(x)), da, R);
+        alto.setValueCurveAtTime(curvaDa(450, 5200, x => Math.pow(x, 1.8)), da, R);
+        basso.setValueCurveAtTime(curvaDa(480, 90, x => x), da, R);
       }
+      // il segnale che va e viene: un ondeggiare lento del volume, più forte quando il disturbo è al massimo
+      const prof = m.ondeggia.prof;
+      prof.cancelScheduledValues(T);
+      prof.setValueCurveAtTime(curvaDa(0, 1, x => 0.32 * Math.sin(Math.PI * Math.min(1, attivo ? x * 1.15 : x)) ** 2), T, D);
     }
     function apriFiltri(m, T, tempo) {
-      [[m.uscita.frequency, 5200], [m.filtroBasso.frequency, 90]].forEach(([x, v]) => { x.cancelScheduledValues(T); x.setTargetAtTime(v, T, tempo); });
+      [[m.uscita.frequency, 5200], [m.filtroBasso.frequency, 90], [m.ondeggia.prof, 0]].forEach(([x, v]) => { x.cancelScheduledValues(T); x.setTargetAtTime(v, T, tempo); });
     }
     let interferenza = null;
     function spegniBrusio() {
@@ -5582,40 +5592,25 @@ Capriccio | Bisogno
       bus.gain.cancelScheduledValues(T); bus.gain.setTargetAtTime(0.0001, T, 0.15);
       setTimeout(() => { try { bus.disconnect(); } catch (e) {} }, 800);
     }
-    function brusio(entra) {
-      if (!musica) return;
+    // il fruscio: uno solo, morbido, che sale e scende senza scatti; la sua "manopola" scivola appena
+    function brusio(entra, D) {
       spegniBrusio();
-      const T = ctx.currentTime, D = entra ? 7.5 : 8.5, caso = (a, b) => a + Math.random() * (b - a);
+      const T = ctx.currentTime, v = 0.085 * fattoreMusica;
       const bus = ctx.createGain(); bus.connect(master); interferenza = bus;
-      const v = 0.11 * fattoreMusica;                 // in proporzione alla musica: in partita è un sottofondo
-      bus.gain.setValueAtTime(0.0001, T);
-      if (entra) {
-        bus.gain.linearRampToValueAtTime(v * 0.7, T + 1.8); bus.gain.linearRampToValueAtTime(v, T + 3.2);
-        bus.gain.linearRampToValueAtTime(v * 0.45, T + 5.2); bus.gain.linearRampToValueAtTime(0.0001, T + D);
-      } else {
-        bus.gain.linearRampToValueAtTime(v, T + 1.4); bus.gain.setValueAtTime(v, T + 2.6);
-        bus.gain.linearRampToValueAtTime(v * 0.4, T + 5); bus.gain.linearRampToValueAtTime(0.0001, T + D);
-      }
-      setTimeout(() => { if (interferenza === bus) interferenza = null; try { bus.disconnect(); } catch (e) {} }, (D + 0.6) * 1000);
-      // il fruscio: una manopola che vaga piano tra le frequenze, con il segnale che va e viene
-      const N = 48, curva = new Float32Array(N), fase = caso(0, 6);
-      for (let i = 0; i < N; i++) { const x = i / (N - 1); curva[i] = 1300 * Math.pow(2.2, Math.sin(x * 7 + fase) * 0.8 + Math.sin(x * 17 + fase * 2) * 0.3); }
-      rumoreSostenuto(bus, { dur: D, vol: 1, curva, q: 1.6, tremolio: caso(2.5, 4) });
-      rumoreSostenuto(bus, { dur: D, vol: 0.14, f: 4200, q: 0.5 });
-      // scariche qua e là, più fitte quando il disturbo è al massimo
-      const da = entra ? 0.8 : 0.3, a = entra ? 5.5 : 4.5;
-      for (let i = 0; i < 9; i++) fruscio({ t: caso(da, a), dur: caso(0.01, 0.04), vol: caso(1.2, 2.4), f: caso(1500, 5000), q: 1.2, att: 0.001, dest: bus, pan: caso(-0.5, 0.5) });
-      // voci lontane di altre stazioni che si accavallano: il brusio
-      for (let i = 0; i < 3; i++) voce({ t: caso(da + 0.4, a - 0.5), dur: caso(0.25, 0.45), f: caso(100, 190), vol: 0.5, dest: bus });
-      if (!entra) {
-        // tornando in onda: due fischi che si avvicinano fino a coincidere, la stazione è di nuovo agganciata
-        const fa = caso(850, 1000);
-        tono({ f: fa, t: 1.5, dur: 1.4, vol: 0.12, att: 0.3, dest: bus });
-        tono({ f: fa * 1.12, f2: fa, t: 1.5, dur: 1.4, vol: 0.12, att: 0.3, dest: bus });
-      } else {
-        // perdendo il segnale: un fischio che scivola via verso il basso
-        tono({ f: caso(1300, 1600), f2: caso(350, 450), t: 1.2, dur: 2.6, vol: 0.1, att: 0.4, dest: bus });
-      }
+      // il massimo arriva a metà nel silenzio (mentre la musica svanisce), a un terzo nel ritorno (prima che la musica riemerga)
+      const picco = entra ? 0.5 : 0.33;
+      bus.gain.setValueCurveAtTime(curvaDa(0, v, x => x <= picco ? Math.sin(Math.PI / 2 * x / picco) ** 2 : liscia(1 - (x - picco) / (1 - picco))), T, D);
+      setTimeout(() => { if (interferenza === bus) interferenza = null; try { bus.disconnect(); } catch (e) {} }, (D + 0.4) * 1000);
+      const src = ctx.createBufferSource(); src.buffer = rumoreBuf; src.loop = true;
+      const fl = ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.Q.value = 0.8;
+      fl.frequency.setValueCurveAtTime(curvaDa(entra ? 1800 : 1100, entra ? 1100 : 1700, x => liscia(x)), T, D);
+      const ammorbidisci = ctx.createBiquadFilter(); ammorbidisci.type = 'lowpass'; ammorbidisci.frequency.value = 3800;
+      // respira insieme alla musica: quando il segnale cala, il fruscio sale un poco
+      const resp = ctx.createGain(); resp.gain.value = 0.85;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.9; lg.gain.value = 0.15;
+      lfo.connect(lg); lg.connect(resp.gain);
+      src.connect(fl); fl.connect(ammorbidisci); ammorbidisci.connect(resp); resp.connect(bus);
+      src.start(T, Math.random() * 1.5); lfo.start(T); src.stop(T + D + 0.1); lfo.stop(T + D + 0.1);
     }
     const dopoTra = T => Math.max(0, T - ctx.currentTime);
     // ance della fisarmonica: due voci appena scordate fanno il tremolo "musette" del liscio
@@ -6179,8 +6174,14 @@ Capriccio | Bisogno
       const bus = ctx.createGain();
       bus.gain.setValueAtTime(0.0001, T);
       bus.gain.setTargetAtTime(livelloBase, inizio - 0.05, cercando ? 0.22 : 0.35);
-      bus.connect(filtroBasso); filtroBasso.connect(filtroAlto); filtroAlto.connect(master);
-      musica = { id, bus, uscita: filtroAlto, filtroBasso, brano: BRANI[id], passo: 0, prossimo: inizio, inizio };
+      // l'ondeggiare del segnale (silenzio radio): un oscillatore lento che fa salire e scendere il volume, a profondità 0 di solito
+      const ondeggia = ctx.createGain(); ondeggia.gain.value = 1;
+      const lfo = ctx.createOscillator(), prof = ctx.createGain(); lfo.frequency.value = 2.2; prof.gain.value = 0;
+      lfo.connect(prof); prof.connect(ondeggia.gain); lfo.start(T);
+      ondeggia.prof = prof.gain; ondeggia.lfo = lfo;
+      if (silenzioMusica === 0) { filtroAlto.frequency.value = 450; filtroBasso.frequency.value = 480; }
+      bus.connect(filtroBasso); filtroBasso.connect(filtroAlto); filtroAlto.connect(ondeggia); ondeggia.connect(master);
+      musica = { id, bus, uscita: filtroAlto, filtroBasso, ondeggia, brano: BRANI[id], passo: 0, prossimo: inizio, inizio };
       musica.timer = setInterval(programma, 50);
       programma();
     }
@@ -6207,7 +6208,7 @@ Capriccio | Bisogno
       if (sfuoca) m.uscita.frequency.setTargetAtTime(500, T, 0.08);
       m.bus.gain.cancelScheduledValues(T);
       m.bus.gain.setTargetAtTime(0.0001, T, sfuma / 4);
-      setTimeout(() => { try { m.uscita.disconnect(); } catch (e) {} }, (sfuma + 0.6) * 1000);
+      setTimeout(() => { try { m.uscita.disconnect(); m.ondeggia.disconnect(); m.ondeggia.lfo.stop(); } catch (e) {} }, (sfuma + 0.6) * 1000);
     }
     // abbassa la musica (per esempio mentre si cerca la frequenza o durante un jingle)
     function abbassaMusica(fattore = 0.3, durata = 0) {
@@ -6254,11 +6255,15 @@ Capriccio | Bisogno
   // durante il «silenzio radio» dell'Impostore nessun suono e nessuna vibrazione: niente deve tradire chi fa cosa
   let silenzioRadioAttivo = false;
   function suona(nome, opzioni) { if (impostazioni.audio && !silenzioRadioAttivo) Suoni.suona(nome, opzioni); }
-  // subito: uscendo dalla partita la musica torna normale senza il brusio di interferenza
-  function silenzioRadioIn(attivo, subito) {
+  // Silenzio radio: suoni e vibrazioni si fermano subito; la musica perde il segnale mentre è visibile la scritta in alto.
+  // modo 'dopo': i suoni tornano (la rivelazione) ma la musica aspetta la scritta «In onda» (musicaInOnda)
+  // modo 'subito': si esce dalla partita, la musica torna normale senza effetti
+  function silenzioRadioIn(attivo, modo, durata) {
+    if (modo === 'subito') Suoni.silenzio(false, true);
     if (silenzioRadioAttivo === attivo) return;
     silenzioRadioAttivo = attivo;
-    Suoni.silenzio(attivo, subito);
+    if (attivo) Suoni.silenzio(true, false, durata);
+    else if (!modo) Suoni.silenzio(false);
     if (attivo && navigator.vibrate) try { navigator.vibrate(0); } catch (e) {}
   }
 
@@ -8772,7 +8777,7 @@ Capriccio | Bisogno
   function fermaTimer() { timers.forEach(clearTimeout); timers.clear(); }
   function interrompiPartita() {
     fermaTimer();
-    silenzioRadioIn(false, true);
+    silenzioRadioIn(false, 'subito');
     passOk.disabled = false;
     musicaAlta = false;
     passaggio.hidden = true;
@@ -9725,7 +9730,7 @@ Capriccio | Bisogno
   }
 
   function mancheImpostore() {
-    silenzioRadioIn(false);
+    silenzioRadioIn(false); musicaInOnda(2);      // per sicurezza: a inizio manche la musica è sempre in onda
     salvaPartita();
     const p = partita, n = p.giocatori.length;
     prendiCarta(p);
@@ -9780,16 +9785,19 @@ Capriccio | Bisogno
   // l'avviso al centro: "Silenzio radio", chi dice l'indizio e l'eventuale blocco; poi tocca al primo giocatore
   const silenzioRadio = document.getElementById('silenzio-radio');
   function avvisoSilenzio(p, poi) {
-    avvisoCentrale({ titolo: 'Silenzio radio', testo: `${nomeDi(p.conduttore)} dice l\u2019indizio ad alta voce: da adesso nessuno parla fino alla rivelazione.`,
+    const durata = avvisoCentrale({ titolo: 'Silenzio radio', testo: `${nomeDi(p.conduttore)} dice l\u2019indizio ad alta voce: da adesso nessuno parla fino alla rivelazione.`,
       blocco: p.bloccato != null ? `Blocco su ${nomeDi(p.bloccato)}` : null, durata: 4200, suono: 'nascondi' }, poi);
-    // da qui alla rivelazione: la musica sfuma e l'app non fa più suoni né vibrazioni
-    silenzioRadioIn(true);
+    // da qui alla rivelazione l'app non fa più suoni né vibrazioni; la musica perde il segnale finché resta la scritta
+    silenzioRadioIn(true, null, durata / 1000);
   }
   // dopo la rivelazione: si torna a parlare, ma i Cercafrequenze non dicono dove avevano messo la lancetta
   function avvisoInOnda() {
-    if (!partita || partita.fase !== 'rivelazione') return;
-    avvisoCentrale({ titolo: 'In onda', tipo: 'in-onda', testo: 'Si torna a parlare: discutete assieme! I Cercafrequenze però non possono rivelare dove avevano messo la loro lancetta.', durata: 6500 });
+    if (!partita || partita.fase !== 'rivelazione') return musicaInOnda();
+    const durata = avvisoCentrale({ titolo: 'In onda', tipo: 'in-onda', testo: 'Si torna a parlare: discutete assieme! I Cercafrequenze però non possono rivelare dove avevano messo la loro lancetta.', durata: 6500 });
+    musicaInOnda(durata / 1000);         // la musica ritrova il segnale mentre la scritta è visibile
   }
+  // se la musica è ancora in silenzio torna in onda (non fa nulla se è già tornata)
+  function musicaInOnda(durata) { Suoni.silenzio(false, false, durata); }
   let avvisoAttivo = 0;
   function avvisoCentrale(o, poi) {
     const id = ++avvisoAttivo;
@@ -9811,7 +9819,9 @@ Capriccio | Bisogno
       if (poi) poi();
     };
     silenzioRadio.onclick = () => { if (performance.now() - aperto > 900) avanti(); };
-    dopo(riduciMoto ? 2500 : o.durata, avanti);
+    const durata = riduciMoto ? 2500 : o.durata;
+    dopo(durata, avanti);
+    return durata;
   }
   function prossimaAzione() {
     const p = partita, a = p.azioni[p.passo];
@@ -9862,7 +9872,7 @@ Capriccio | Bisogno
   }
   function rivelaImpostore() {
     const p = partita, n = p.giocatori.length;
-    silenzioRadioIn(false);            // si torna in onda: la musica risale piano piano e tornano suoni e vibrazioni
+    silenzioRadioIn(false, 'dopo');    // tornano suoni e vibrazioni; la musica torna con la scritta «In onda»
     limitaSintonia(null); risposte.replaceChildren();
     if (p.lancetta == null) p.lancetta = mediaCercatori(p);
     chiudiEffetti(p);
@@ -9882,6 +9892,7 @@ Capriccio | Bisogno
   }
   function dopoRivelazione() {
     avvisoAttivo++; silenzioRadio.hidden = true; silenzioRadio.onclick = null;
+    musicaInOnda(2);
     if (partita.votoOra) votazioneImpostore(); else prossimaMancheImpostore();
   }
   function prossimaMancheImpostore() {
