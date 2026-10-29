@@ -5538,15 +5538,84 @@ Capriccio | Bisogno
       livelloBase = LIVELLO_MUSICA * fattore * silenzioMusica;
       if (!musica) return;
       const g = musica.bus.gain, T = ctx.currentTime;
+      if (T < rientroLento) lento = Math.max(lento || 0.5, 2.3);     // mentre si torna in onda la risalita resta lenta
       g.cancelScheduledValues(T);
       // se la stazione sta ancora per agganciarsi, il volume sale solo quando arriva
       g.setTargetAtTime(Math.max(livelloBase, 0.0001), Math.max(T, musica.inizio - 0.05), lento || 0.5);
     }
     let fattoreMusica = 1, rientroLento = 0;
-    function silenzio(attivo) {
+    // «Silenzio radio» e «In onda»: la stazione non si spegne di colpo, perde il segnale.
+    // Entrando nel silenzio la musica si fa ovattata e lontana mentre sale un brusio di interferenze (fruscio che va e viene,
+    // scariche, voci lontane), poi resta solo il silenzio (circa 7 secondi). Tornando in onda il brusio arriva per primo,
+    // un fischio si aggancia e la musica riemerge piano piano dal disturbo, prima ovattata e poi limpida (circa 10 secondi).
+    // «subito»: si esce dalla partita, niente effetti
+    function silenzio(attivo, subito) {
       silenzioMusica = attivo ? 0 : 1;
-      if (!attivo && ctx) rientroLento = ctx.currentTime + 6;
-      livelloMusica(fattoreMusica, attivo ? 0.7 : 1.6);     // spegnersi in 2-3 secondi, riaccendersi in 5-6
+      if (!ctx) return;
+      const T = ctx.currentTime;
+      if (subito) { rientroLento = 0; spegniBrusio(); livelloMusica(fattoreMusica, 0.5); if (musica) apriFiltri(musica, T, 0.4); return; }
+      if (!attivo) rientroLento = T + 10;
+      livelloBase = LIVELLO_MUSICA * fattoreMusica * silenzioMusica;
+      brusio(attivo);
+      if (!musica) return;
+      const g = musica.bus.gain, alto = musica.uscita.frequency, basso = musica.filtroBasso.frequency;
+      [g, alto, basso].forEach(x => { x.cancelScheduledValues(T); x.setValueAtTime(x.value, T); });
+      if (attivo) {
+        g.setTargetAtTime(0.0001, T + 0.6, 1.5);
+        alto.exponentialRampToValueAtTime(420, T + 5.5);
+        basso.exponentialRampToValueAtTime(520, T + 5.5);
+      } else {
+        alto.setValueAtTime(420, T); basso.setValueAtTime(520, T);
+        alto.setValueAtTime(420, T + 1.6); basso.setValueAtTime(520, T + 1.6);
+        g.setTargetAtTime(Math.max(livelloBase, 0.0001), T + 1.6, 2.3);
+        alto.exponentialRampToValueAtTime(5200, T + 9);
+        basso.exponentialRampToValueAtTime(90, T + 7.5);
+      }
+    }
+    function apriFiltri(m, T, tempo) {
+      [[m.uscita.frequency, 5200], [m.filtroBasso.frequency, 90]].forEach(([x, v]) => { x.cancelScheduledValues(T); x.setTargetAtTime(v, T, tempo); });
+    }
+    let interferenza = null;
+    function spegniBrusio() {
+      if (!interferenza) return;
+      const bus = interferenza, T = ctx.currentTime; interferenza = null;
+      bus.gain.cancelScheduledValues(T); bus.gain.setTargetAtTime(0.0001, T, 0.15);
+      setTimeout(() => { try { bus.disconnect(); } catch (e) {} }, 800);
+    }
+    function brusio(entra) {
+      if (!musica) return;
+      spegniBrusio();
+      const T = ctx.currentTime, D = entra ? 7.5 : 8.5, caso = (a, b) => a + Math.random() * (b - a);
+      const bus = ctx.createGain(); bus.connect(master); interferenza = bus;
+      const v = 0.11 * fattoreMusica;                 // in proporzione alla musica: in partita è un sottofondo
+      bus.gain.setValueAtTime(0.0001, T);
+      if (entra) {
+        bus.gain.linearRampToValueAtTime(v * 0.7, T + 1.8); bus.gain.linearRampToValueAtTime(v, T + 3.2);
+        bus.gain.linearRampToValueAtTime(v * 0.45, T + 5.2); bus.gain.linearRampToValueAtTime(0.0001, T + D);
+      } else {
+        bus.gain.linearRampToValueAtTime(v, T + 1.4); bus.gain.setValueAtTime(v, T + 2.6);
+        bus.gain.linearRampToValueAtTime(v * 0.4, T + 5); bus.gain.linearRampToValueAtTime(0.0001, T + D);
+      }
+      setTimeout(() => { if (interferenza === bus) interferenza = null; try { bus.disconnect(); } catch (e) {} }, (D + 0.6) * 1000);
+      // il fruscio: una manopola che vaga piano tra le frequenze, con il segnale che va e viene
+      const N = 48, curva = new Float32Array(N), fase = caso(0, 6);
+      for (let i = 0; i < N; i++) { const x = i / (N - 1); curva[i] = 1300 * Math.pow(2.2, Math.sin(x * 7 + fase) * 0.8 + Math.sin(x * 17 + fase * 2) * 0.3); }
+      rumoreSostenuto(bus, { dur: D, vol: 1, curva, q: 1.6, tremolio: caso(2.5, 4) });
+      rumoreSostenuto(bus, { dur: D, vol: 0.14, f: 4200, q: 0.5 });
+      // scariche qua e là, più fitte quando il disturbo è al massimo
+      const da = entra ? 0.8 : 0.3, a = entra ? 5.5 : 4.5;
+      for (let i = 0; i < 9; i++) fruscio({ t: caso(da, a), dur: caso(0.01, 0.04), vol: caso(1.2, 2.4), f: caso(1500, 5000), q: 1.2, att: 0.001, dest: bus, pan: caso(-0.5, 0.5) });
+      // voci lontane di altre stazioni che si accavallano: il brusio
+      for (let i = 0; i < 3; i++) voce({ t: caso(da + 0.4, a - 0.5), dur: caso(0.25, 0.45), f: caso(100, 190), vol: 0.5, dest: bus });
+      if (!entra) {
+        // tornando in onda: due fischi che si avvicinano fino a coincidere, la stazione è di nuovo agganciata
+        const fa = caso(850, 1000);
+        tono({ f: fa, t: 1.5, dur: 1.4, vol: 0.12, att: 0.3, dest: bus });
+        tono({ f: fa * 1.12, f2: fa, t: 1.5, dur: 1.4, vol: 0.12, att: 0.3, dest: bus });
+      } else {
+        // perdendo il segnale: un fischio che scivola via verso il basso
+        tono({ f: caso(1300, 1600), f2: caso(350, 450), t: 1.2, dur: 2.6, vol: 0.1, att: 0.4, dest: bus });
+      }
     }
     const dopoTra = T => Math.max(0, T - ctx.currentTime);
     // ance della fisarmonica: due voci appena scordate fanno il tremolo "musette" del liscio
@@ -5605,8 +5674,8 @@ Capriccio | Bisogno
         const T0 = ctx.currentTime + dopoTra(T), f = NOTA(n), dur = Math.max(d, 0.12), fine = T0 + dur;
         const da = ev && ev.scivola ? NOTA(ev.scivola) : f * 0.972, arriva = T0 + (ev && ev.scivola ? Math.min(0.2, dur * 0.5) : Math.min(0.07, dur * 0.4));
         const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 1.4;
-        fl.frequency.setValueAtTime(650, T0); fl.frequency.linearRampToValueAtTime(2300, T0 + 0.06); fl.frequency.exponentialRampToValueAtTime(1300, fine);
-        const g = ctx.createGain(), v = 0.026;
+        fl.frequency.setValueAtTime(600, T0); fl.frequency.linearRampToValueAtTime(1800, T0 + 0.06); fl.frequency.exponentialRampToValueAtTime(1050, fine);
+        const g = ctx.createGain(), v = 0.0145;     // in sottofondo: il groove resta la parte principale
         g.gain.setValueAtTime(0.0001, T0); g.gain.linearRampToValueAtTime(v, T0 + 0.025);
         g.gain.linearRampToValueAtTime(v * 0.78, T0 + Math.min(0.25, dur * 0.6)); g.gain.setValueAtTime(v * 0.78, Math.max(T0 + 0.03, fine - 0.06));
         g.gain.linearRampToValueAtTime(0.0001, fine);
@@ -5619,7 +5688,7 @@ Capriccio | Bisogno
         });
         vib.start(T0); vib.stop(fine + 0.05);
         fl.connect(g); g.connect(bus);
-        fruscio({ t: dopoTra(T), dur: 0.09, vol: 0.008, f: 2600, q: 1.2, att: 0.01, dest: bus });     // il fiato
+        fruscio({ t: dopoTra(T), dur: 0.09, vol: 0.0045, f: 2600, q: 1.2, att: 0.01, dest: bus });     // il fiato
       },
       cassaMorbida: (n, T, d, bus) => tono({ f: 100, f2: 42, t: dopoTra(T), dur: 0.2, vol: 0.11, att: 0.003, dest: bus }),
       rullanteMorbido: (n, T, d, bus) => { fruscio({ t: dopoTra(T), dur: 0.1, vol: 0.05, f: 2000, q: 0.8, att: 0.003, dest: bus }); tono({ f: 210, t: dopoTra(T), dur: 0.05, vol: 0.025, att: 0.002, dest: bus }); },
@@ -6111,7 +6180,7 @@ Capriccio | Bisogno
       bus.gain.setValueAtTime(0.0001, T);
       bus.gain.setTargetAtTime(livelloBase, inizio - 0.05, cercando ? 0.22 : 0.35);
       bus.connect(filtroBasso); filtroBasso.connect(filtroAlto); filtroAlto.connect(master);
-      musica = { id, bus, uscita: filtroAlto, brano: BRANI[id], passo: 0, prossimo: inizio, inizio };
+      musica = { id, bus, uscita: filtroAlto, filtroBasso, brano: BRANI[id], passo: 0, prossimo: inizio, inizio };
       musica.timer = setInterval(programma, 50);
       programma();
     }
@@ -6144,6 +6213,7 @@ Capriccio | Bisogno
     function abbassaMusica(fattore = 0.3, durata = 0) {
       if (!musica) return;
       const g = musica.bus.gain, T = ctx.currentTime;
+      if (T < rientroLento) return;          // la musica sta riemergendo dal disturbo: è già bassa, si lascia salire
       g.cancelScheduledValues(T);
       g.setTargetAtTime(livelloBase * fattore, T, 0.08);
       // appena tornati in onda dal silenzio radio la musica risale lenta anche dopo un suono importante
@@ -6152,6 +6222,7 @@ Capriccio | Bisogno
     function rialzaMusica() {
       if (!musica) return;
       const g = musica.bus.gain, T = ctx.currentTime;
+      if (T < rientroLento) return;
       g.cancelScheduledValues(T);
       g.setTargetAtTime(livelloBase, T, 0.3);
     }
@@ -6183,10 +6254,11 @@ Capriccio | Bisogno
   // durante il «silenzio radio» dell'Impostore nessun suono e nessuna vibrazione: niente deve tradire chi fa cosa
   let silenzioRadioAttivo = false;
   function suona(nome, opzioni) { if (impostazioni.audio && !silenzioRadioAttivo) Suoni.suona(nome, opzioni); }
-  function silenzioRadioIn(attivo) {
+  // subito: uscendo dalla partita la musica torna normale senza il brusio di interferenza
+  function silenzioRadioIn(attivo, subito) {
     if (silenzioRadioAttivo === attivo) return;
     silenzioRadioAttivo = attivo;
-    Suoni.silenzio(attivo);
+    Suoni.silenzio(attivo, subito);
     if (attivo && navigator.vibrate) try { navigator.vibrate(0); } catch (e) {}
   }
 
@@ -8700,7 +8772,7 @@ Capriccio | Bisogno
   function fermaTimer() { timers.forEach(clearTimeout); timers.clear(); }
   function interrompiPartita() {
     fermaTimer();
-    silenzioRadioIn(false);
+    silenzioRadioIn(false, true);
     passOk.disabled = false;
     musicaAlta = false;
     passaggio.hidden = true;
