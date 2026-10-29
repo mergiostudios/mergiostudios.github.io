@@ -3741,6 +3741,14 @@
   @keyframes carta-no { 15% { transform: translateX(-7px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-4px); } 75% { transform: translateX(3px); } }
   .cp-scelta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; flex-basis: 100%; }
   .cp-scelta .btn-piccolo { height: 36px; padding: 0 14px; font-weight: 700; color: var(--inchiostro); }
+  .cp-scelta .cp-nome-btn { height: auto; min-height: 44px; padding: 5px 16px; display: grid; justify-items: center; gap: 1px; line-height: 1.15; }
+  .cp-nome-btn .cp-turni { font-size: 11.5px; font-weight: 600; color: var(--tenue); }
+  .carta-potere.con-scelta .cp-testo, .carta-potere.con-scelta .cp-durata { display: none; }
+  .carta-potere.con-scelta .cp-tessera { grid-template-areas: "icona nome"; padding-block: 8px; }
+  .carta-potere.con-scelta .cp-icona { width: clamp(34px, 9cqh, 44px); }
+  .carta-potere.con-scelta .cp-nome { align-self: center; }
+  @container app (max-height: 380px) { .cp-scelta .cp-nome-btn { min-height: 38px; padding: 3px 12px; } .cp-nome-btn .cp-turni { font-size: 11px; } }
+  .cp-nome-btn[aria-pressed="true"] { border-color: var(--ambra); background: color-mix(in srgb, var(--ambra) 18%, var(--superficie)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ambra) 30%, transparent); }
   #cp-chiudi { color: var(--inchiostro); }
   @keyframes cp-gira { from { opacity: 0; transform: perspective(600px) rotateY(-70deg) scale(.92); } to { opacity: 1; transform: none; } }
   @container app (max-height: 380px) {
@@ -10031,6 +10039,17 @@ Capriccio | Bisogno
     }
     return no('');
   }
+  // quante volte un giocatore ha già fatto il Cercafrequenze (nelle manche finite) e quante volte lo fa in tutta la partita
+  function turniCerca(p, chi) {
+    const n = p.giocatori.length, k = CERCATORI_IMPOSTORE[n];
+    let fatti = 0, previsti = 0;
+    p.storico.forEach(s => { if (s.azioni.some(x => x.tipo === 'cerca' && x.chi === chi && x.posizione != null)) fatti++; });
+    for (let m = 1; m <= p.totale; m++) {
+      const cond = ((p.conduttore + m - p.manche) % n + n) % n;
+      if (Array.from({ length: k }, (_, j) => (cond + 1 + j) % n).includes(chi)) previsti++;
+    }
+    return { fatti, previsti };
+  }
   function tracciabili(p, io) {
     const chi = new Set();
     p.storico.forEach(s => s.azioni.forEach(x => { if (x.tipo === 'cerca' && x.chi !== io) chi.add(x.chi); }));
@@ -10056,7 +10075,7 @@ Capriccio | Bisogno
     if (!p.cartaVista.includes(chi)) p.cartaVista.push(chi);
     const corpo = document.getElementById('cp-corpo'), azioni = document.getElementById('cp-azioni');
     document.getElementById('cp-sopra').textContent = prima ? `${nomeDi(chi)}, ecco la tua carta` : 'La tua carta';
-    corpo.replaceChildren(); azioni.replaceChildren();
+    corpo.replaceChildren(); azioni.replaceChildren(); finestraCarta.classList.remove('con-scelta');
     const tessera = el('div', 'cp-tessera' + (c ? ' squadra-' + POTERI[c.id].squadra.toLowerCase() : ' vuota'));
     tessera.innerHTML = '<span class="cp-icona">' + (c ? iconaPotere(c.id) : ICONA_CARTA) + '</span>';
     if (c) {
@@ -10082,16 +10101,34 @@ Capriccio | Bisogno
       else if (c.id === 'deriva') {
         azioni.append(bottone('Usa: verso sinistra', () => usaPotere(c, ctx, -1), 'tasto-ambra piccolo'), bottone('Usa: verso destra', () => usaPotere(c, ctx, 1), 'tasto-ambra piccolo'));
       } else if (c.id === 'tracciamento') {
+        // si tocca un nome (con quante volte ha già fatto il Cercafrequenze su quante ne farà), poi si conferma
         const scelta = el('div', 'cp-scelta');
-        tracciabili(p, chi).forEach(t => scelta.append(bottone(nomeDi(t), () => {
+        let scelto = null;
+        const traccia = bottone('Traccia', () => {
+          if (scelto == null) return;
+          const t = scelto;
           usaPotere(c, ctx, t);
           const r = erroreMedio(p, t);
           risultato.hidden = false;
           risultato.textContent = `${nomeDi(t)}: ${giudizioTraccia(r.media)} (${r.volte === 1 ? 'una volta' : `media di ${r.volte} volte`} da Cercafrequenze)`;
           scelta.remove();
+          finestraCarta.classList.remove('con-scelta');
           azioni.replaceChildren(el('p', 'cp-usata', `Già usata nella ${p.manche}\u00aa manche`));
-        }, 'btn-piccolo cp-nome-btn')));
-        azioni.append(el('span', 'cp-stato', 'Usa: scegli un giocatore'), scelta);
+        }, 'tasto-ambra piccolo');
+        traccia.disabled = true;
+        tracciabili(p, chi).forEach(t => {
+          const { fatti, previsti } = turniCerca(p, t);
+          const b = el('button', 'btn-piccolo cp-nome-btn');
+          b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+          b.append(el('b', '', nomeDi(t)), el('span', 'cp-turni', `${fatti} ${fatti === 1 ? 'turno' : 'turni'} su ${previsti}`));
+          b.addEventListener('click', () => {
+            scelto = t; traccia.disabled = false;
+            scelta.querySelectorAll('.cp-nome-btn').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+          });
+          scelta.append(b);
+        });
+        azioni.append(el('span', 'cp-stato', 'Scegli un giocatore, poi premi Traccia'), scelta, traccia);
+        finestraCarta.classList.add('con-scelta');       // mentre si sceglie, la descrizione lascia spazio ai nomi
       } else azioni.append(bottone('Usa', () => usaPotere(c, ctx), 'tasto-ambra piccolo'));
     }
     document.getElementById('cp-chiudi').onclick = chiudiCarta;
