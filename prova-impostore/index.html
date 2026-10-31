@@ -3566,7 +3566,7 @@
     position: relative; z-index: 1; padding: 7px 14px 7px 10px; border-radius: 14px; background: var(--sfondo); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--ambra-testo) 35%, transparent), 0 0 14px 6px var(--sfondo); }
   .nota-orario b { color: var(--inchiostro); }
   .nota-orario svg { flex: none; width: 22px; height: 22px; color: var(--ambra-testo); }
-  /* Impostore: chi gioca, come posti attorno al tavolo numerati in senso orario.
+  /* Chi gioca (giocatori singoli e Impostore): posti a pillola, numerati nell'ordine di gioco.
      Da 6 nomi in su si va su due colonne che si leggono dall'alto in basso (1-5 a sinistra, 6-10 a destra),
      e il numero resta sempre visibile */
   .elenco-nomi.giro { gap: 5px; }
@@ -7907,7 +7907,7 @@ Capriccio | Bisogno
       box.replaceChildren(sfida);
     } else {
       const imp = modoScelto === 'impostore', quanti = imp ? verificaImpostore(true).length : 0;
-      const ol = el('ol', 'elenco-nomi' + (imp ? ' giro' : '') + (quanti > 5 ? ' molti' : ''));
+      const ol = el('ol', 'elenco-nomi giro' + (quanti > 5 ? ' molti' : ''));
       if (quanti > 5) ol.style.setProperty('--righe', Math.ceil(quanti / 2));
       (modoScelto === 'impostore' ? verificaImpostore(true) : verificaSingoli(true)).forEach((nome, i) => { const li = el('li'); li.append(el('i', 'num', i + 1), el('span', '', nome)); ol.append(li); });
       box.replaceChildren(ol);
