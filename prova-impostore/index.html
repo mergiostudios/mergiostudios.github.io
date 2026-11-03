@@ -7363,7 +7363,7 @@ Capriccio | Bisogno
     squadre: { titolo: 'A squadre', passi: [
       '<b>La squadra di turno sceglie un caposquadra</b>, diverso ogni volta. Solo lui guarda lo schermo: vede in basso le radiocassette con gli estremi (es. brutto/bello) e sopra la scala della radio con la frequenza nascosta. Può cambiare le radiocassette due volte.',
       '<b>Il caposquadra dice un indizio ad alta voce</b>: la sua squadra ne discute, posiziona la lancetta e la conferma.',
-      '<b>L’altra squadra scommette</b> su quanto è lontana la lancetta dalla frequenza nascosta: <b>Segnale perfetto</b> (è sul 5 o sul 4, errore fino al 2,5%: +2), <b>Segnale disturbato</b> (errore tra il 2,5% e il 9%: +1) o <b>Fuori frequenza</b> (errore oltre il 9%: +3).',
+      '<b>L’altra squadra scommette</b> su dove cade lo spicchio del 5 rispetto alla lancetta: <b>Segnale perfetto</b> (entro il 2,5% per parte: +2), <b>Segnale disturbato</b> (tra il 2,5% e il 9%: +1) o <b>Fuori frequenza</b> (oltre il 9%: +3). Le zone si vedono sulla scala: la scommessa è vinta se lo spicchio del 5 entra nella zona scelta, anche solo in parte.',
       '<b>Si rivela la frequenza nascosta.</b> La squadra di turno prende da 0 a 5 punti; l’altra prende i punti della scommessa, se l’ha indovinata.',
       '<b>Tre turni a testa</b>, alternati: alla fine vince la squadra con più punti.',
       '<b>Se siete pari</b> si gioca uno spareggio, un turno a testa con le stesse regole. Se la parità resta, è pareggio.'
@@ -8252,7 +8252,7 @@ Capriccio | Bisogno
       // toccando la scala si sceglie la scommessa della zona toccata, rispetto alla lancetta
       const d = Math.abs(valoreDaX(q.x) - partita.sintonia);
       // le stesse soglie dei tre tasti (e delle zone disegnate sulla scala): 2,5% e 9%
-      if (q.y < 192) scegliScommessa(SCOMMESSE.find(x => x.vinta(d)).id);
+      if (q.y < 192) scegliScommessa(SCOMMESSE.find(x => x.zona(d)).id);
       return;
     }
     if (!lancettaLibera() || q.y > 194) return;         // si tocca solo la finestra della scala
@@ -9423,10 +9423,18 @@ Capriccio | Bisogno
      In caso di parità, uno spareggio: un turno a testa, nello stesso ordine; se resta pari è pareggio. */
   const TURNI_SQUADRA = 3;
   // le tre scommesse: distanza tra lancetta e centro, in punti della scala (2% = 2, 7% = 7)
+  const SPICCHIO = MEZZE_FASCE[0];                      // mezza larghezza dello spicchio del 5
   const SCOMMESSE = [
-    { id: 'perfetto', nome: 'Segnale perfetto', punti: 2, vinta: d => d <= MEZZE_FASCE[1] + 1e-9 },   // sul 5 o sul 4 (entro il 2,5%)
-    { id: 'disturbato', nome: 'Segnale disturbato', punti: 1, vinta: d => d > MEZZE_FASCE[1] + 1e-9 && d <= LIMITE_DISTURBATO + 1e-9 },
-    { id: 'fuori', nome: 'Fuori frequenza', punti: 3, vinta: d => d > LIMITE_DISTURBATO + 1e-9 }
+    // zona: dove sta un punto della scala rispetto alla lancetta (serve per scegliere la scommessa toccando la scala).
+    // vinta: la scommessa è vinta se lo spicchio del 5 (largo 0,94 per parte attorno al centro) entra, anche solo
+    // in parte, nella zona scelta. Per questo ai confini possono essere vere due scommesse insieme: ognuno vince
+    // se lo spicchio tocca la sua zona.
+    { id: 'perfetto', nome: 'Segnale perfetto', punti: 2, zona: d => d <= MEZZE_FASCE[1] + 1e-9,
+      vinta: d => d - SPICCHIO <= MEZZE_FASCE[1] + 1e-9 },
+    { id: 'disturbato', nome: 'Segnale disturbato', punti: 1, zona: d => d > MEZZE_FASCE[1] + 1e-9 && d <= LIMITE_DISTURBATO + 1e-9,
+      vinta: d => d + SPICCHIO >= MEZZE_FASCE[1] - 1e-9 && d - SPICCHIO <= LIMITE_DISTURBATO + 1e-9 },
+    { id: 'fuori', nome: 'Fuori frequenza', punti: 3, zona: d => d > LIMITE_DISTURBATO + 1e-9,
+      vinta: d => d + SPICCHIO >= LIMITE_DISTURBATO - 1e-9 }
   ];
   const scommessaDi = id => SCOMMESSE.find(x => x.id === id);
 
