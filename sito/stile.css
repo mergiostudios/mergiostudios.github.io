@@ -276,3 +276,12 @@ details p { padding: 0 0 20px; max-width: 40em; }
 
 .pagina-radio .piede { background: #0A1F24; }
 .pagina-rana .piede { background: #120D24; }
+
+/* ---------- pagina Contatti ---------- */
+.contatti { display: grid; gap: clamp(28px, 4vw, 48px); padding-block: clamp(28px, 6vw, 84px) clamp(64px, 10vw, 140px); }
+.contatti .titolone { max-width: 11em; }
+.contatti-testo { display: grid; gap: 16px; }
+.contatti-testo a { font-weight: 800; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.contatti-mail { display: grid; gap: 10px; justify-items: start; padding-top: clamp(24px, 3vw, 36px); border-top: 1.5px solid var(--riga); }
+.contatti-mail .indirizzo { font-weight: 800; font-size: clamp(26px, 4.6vw, 52px); line-height: 1.05; letter-spacing: -.02em; text-decoration: none; overflow-wrap: anywhere; border-bottom: 4px solid var(--ambra); }
+.contatti-mail .indirizzo:hover { border-bottom-color: var(--corallo); }

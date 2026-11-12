@@ -21,12 +21,13 @@
   var prova = document.querySelector('.prova');
   if (prova) {
     var CARTE = [
-      { a: 'Cibo terribile', b: 'Cibo delizioso', indizio: 'Pizza con l’ananas', centro: 34 },
+      { a: 'Cibo terribile', b: 'Cibo delizioso', indizio: 'Pizza con l’ananas', centro: 15 },   // 91 MHz
       { a: 'Animale innocuo', b: 'Animale pericoloso', indizio: 'Un’oca arrabbiata', centro: 68 },
       { a: 'Freddo', b: 'Caldo', indizio: 'Il caffè dimenticato sulla scrivania', centro: 41 },
       { a: 'Film da vedere da soli', b: 'Film da vedere in compagnia', indizio: 'Un horror', centro: 77 },
       { a: 'Inutile', b: 'Indispensabile', indizio: 'Il caricabatterie in vacanza', centro: 91 }
     ];
+    // centro: posizione sulla scala 0–100, cioè (MHz − 88) × 5
     // metà larghezza delle fasce (su una scala 0–100), come nel gioco: 5, 4, 3, 2 e 1 punto
     var MEZZE = [0.94, 2.5, 4.69, 7.81, 12.5];
     var ESITI = ['Fuori frequenza', 'Solo fruscio', 'Segnale debole', 'Segnale pulito', 'Segnale forte', 'Sintonia perfetta'];
