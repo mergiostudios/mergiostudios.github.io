@@ -16,7 +16,7 @@
 <meta name="theme-color" content="#0F2A30">
 <link rel="icon" type="image/png" sizes="32x32" href="/sintonizzati/icone/favicon-32.png">
 <link rel="preload" href="/sintonizzati/fonti/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="/sito/stile.css?v=20261112e">
+<link rel="stylesheet" href="/sito/stile.css?v=20261112g">
 </head>
 <body class="pagina-radio">
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -87,25 +87,65 @@
 <section class="sezione fascia-chiara" aria-labelledby="h-modi">
   <div class="dentro">
     <h2 class="titolo" id="h-modi">Quattro modi di giocare</h2>
-    <ul class="elenco-righe">
-      <li><strong>Giocatori singoli<small>Da 3 a 5 giocatori</small></strong><p>Ognuno per sé. Chi dà l’indizio guadagna quanto riescono a guadagnare gli altri, ma alla fine vince uno solo.</p></li>
-      <li><strong>A squadre<small>Da 4 giocatori in su</small></strong><p>Gruppo contro gruppo. Mentre una squadra cerca la frequenza, l’altra scommette su quanto finirà lontana.</p></li>
-      <li><strong>Collaborativa<small>Da 2 giocatori in su</small></strong><p>Tutti contro il gioco. Sei round per arrivare al livello «Mente alveare», cambiando radio lungo il percorso.</p></li>
-      <li><strong>Impostore<small>Da 5 a 10 giocatori</small></strong><p>Operatori contro Disturbatori: ruoli segreti, silenzio radio e voti per scoprire chi sta remando contro.</p></li>
-    </ul>
+    <div class="modi">
+      <article class="modo semplice">
+        <p class="quanti">Da 3 a 5 giocatori</p>
+        <h3 class="titoletto">Giocatori singoli</h3>
+        <p>Ognuno per sé. Chi dà l’indizio guadagna quanto riescono a guadagnare gli altri, ma alla fine vince uno solo.</p>
+      </article>
+      <article class="modo semplice">
+        <p class="quanti">Da 4 giocatori in su</p>
+        <h3 class="titoletto">A squadre</h3>
+        <p>Gruppo contro gruppo. Mentre una squadra cerca la frequenza, l’altra scommette su quanto finirà lontana.</p>
+      </article>
+      <article class="modo grande collab">
+        <div class="scena" aria-hidden="true">
+          <span class="pallini"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="livello">Mente alveare</span>
+        </div>
+        <p class="quanti">Da 2 giocatori in su</p>
+        <h3>Collaborativa</h3>
+        <p class="frase">Tutti insieme contro la radio.</p>
+        <p>Niente avversari: sei round per fare più punti possibile e raggiungere il livello «Mente alveare». Ogni centro vi avvicina, ogni errore pesa su tutti.</p>
+      </article>
+      <article class="modo grande impostore">
+        <div class="scena" aria-hidden="true">
+          <span class="facce"><i class="faccia" style="--tinta:#FFB52E"></i><i class="faccia" style="--tinta:#5AAFE0"></i><i class="faccia" style="--tinta:#3FC290"></i><i class="faccia" style="--tinta:#8B6CE8"></i><i class="faccia spia" style="--tinta:#FF5FB2"></i><i class="faccia" style="--tinta:#C8F53C"></i><i class="faccia" style="--tinta:#FFB52E"></i></span>
+        </div>
+        <p class="quanti">Da 5 a 10 giocatori</p>
+        <h3>Impostore</h3>
+        <p class="frase">Qualcuno sta remando contro.</p>
+        <p>Gli Operatori cercano la frequenza, i Disturbatori la sabotano senza farsi scoprire. Ruoli segreti, silenzio radio e un voto per smascherarli.</p>
+      </article>
+    </div>
   </div>
 </section>
 
 <section class="sezione" aria-labelledby="h-staz">
   <div class="dentro">
     <h2 class="titolo" id="h-staz">Nove stazioni, oltre 1.500 radiocassette</h2>
-    <ul class="bande">
-      <li style="--spia:#FFB52E"><h3>Onde AM</h3><p class="tenue">Per tutti</p>
-        <ul style="margin-top:14px"><li><strong>Radio Merenda</strong><span class="tenue">Parole semplici per i più piccoli</span></li><li><strong>Hit Parade</strong><span class="tenue">I grandi classici per tutti</span></li><li><strong>Onde Cerebrali</strong><span class="tenue">Concetti astratti e sfumati</span></li></ul></li>
-      <li style="--spia:#5AAFE0"><h3>Onde FM</h3><p class="tenue">Per appassionati</p>
-        <ul style="margin-top:14px"><li><strong>Amarcord Radio</strong><span class="tenue">Ricordi, tradizioni e mode</span></li><li><strong>8-Bit FM</strong><span class="tenue">Videogiochi, fumetti e fantascienza</span></li><li><strong>Prima Visione</strong><span class="tenue">Cinema, serie TV, musica e star</span></li></ul></li>
-      <li style="--spia:#FF5A47"><h3>Frequenze Pirata</h3><p class="tenue">Solo per adulti (18+)</p>
-        <ul style="margin-top:14px"><li><strong>Fuori Orario</strong><span class="tenue">Lavoro, colleghi e dopo-lavoro</span></li><li><strong>Onda Nera</strong><span class="tenue">Umorismo nero e macabro</span></li><li><strong>Dopo Mezzanotte</strong><span class="tenue">Temi piccanti per adulti</span></li></ul></li>
+    <ul class="frequenze">
+      <li class="banda am">
+        <svg class="quadrante" viewBox="0 0 300 64" aria-hidden="true"><g class="tacche" stroke-linecap="round"><line x1="20.0" y1="30" x2="20.0" y2="46" stroke-width="2.2"/><line x1="26.5" y1="30" x2="26.5" y2="36" stroke-width="0.9"/><line x1="33.0" y1="30" x2="33.0" y2="36" stroke-width="0.9"/><line x1="39.5" y1="30" x2="39.5" y2="36" stroke-width="0.9"/><line x1="46.0" y1="30" x2="46.0" y2="36" stroke-width="0.9"/><line x1="52.5" y1="30" x2="52.5" y2="41" stroke-width="1.4"/><line x1="59.0" y1="30" x2="59.0" y2="36" stroke-width="0.9"/><line x1="65.5" y1="30" x2="65.5" y2="36" stroke-width="0.9"/><line x1="72.0" y1="30" x2="72.0" y2="36" stroke-width="0.9"/><line x1="78.5" y1="30" x2="78.5" y2="36" stroke-width="0.9"/><line x1="85.0" y1="30" x2="85.0" y2="46" stroke-width="2.2"/><line x1="91.5" y1="30" x2="91.5" y2="36" stroke-width="0.9"/><line x1="98.0" y1="30" x2="98.0" y2="36" stroke-width="0.9"/><line x1="104.5" y1="30" x2="104.5" y2="36" stroke-width="0.9"/><line x1="111.0" y1="30" x2="111.0" y2="36" stroke-width="0.9"/><line x1="117.5" y1="30" x2="117.5" y2="41" stroke-width="1.4"/><line x1="124.0" y1="30" x2="124.0" y2="36" stroke-width="0.9"/><line x1="130.5" y1="30" x2="130.5" y2="36" stroke-width="0.9"/><line x1="137.0" y1="30" x2="137.0" y2="36" stroke-width="0.9"/><line x1="143.5" y1="30" x2="143.5" y2="36" stroke-width="0.9"/><line x1="150.0" y1="30" x2="150.0" y2="46" stroke-width="2.2"/><line x1="156.5" y1="30" x2="156.5" y2="36" stroke-width="0.9"/><line x1="163.0" y1="30" x2="163.0" y2="36" stroke-width="0.9"/><line x1="169.5" y1="30" x2="169.5" y2="36" stroke-width="0.9"/><line x1="176.0" y1="30" x2="176.0" y2="36" stroke-width="0.9"/><line x1="182.5" y1="30" x2="182.5" y2="41" stroke-width="1.4"/><line x1="189.0" y1="30" x2="189.0" y2="36" stroke-width="0.9"/><line x1="195.5" y1="30" x2="195.5" y2="36" stroke-width="0.9"/><line x1="202.0" y1="30" x2="202.0" y2="36" stroke-width="0.9"/><line x1="208.5" y1="30" x2="208.5" y2="36" stroke-width="0.9"/><line x1="215.0" y1="30" x2="215.0" y2="46" stroke-width="2.2"/><line x1="221.5" y1="30" x2="221.5" y2="36" stroke-width="0.9"/><line x1="228.0" y1="30" x2="228.0" y2="36" stroke-width="0.9"/><line x1="234.5" y1="30" x2="234.5" y2="36" stroke-width="0.9"/><line x1="241.0" y1="30" x2="241.0" y2="36" stroke-width="0.9"/><line x1="247.5" y1="30" x2="247.5" y2="41" stroke-width="1.4"/><line x1="254.0" y1="30" x2="254.0" y2="36" stroke-width="0.9"/><line x1="260.5" y1="30" x2="260.5" y2="36" stroke-width="0.9"/><line x1="267.0" y1="30" x2="267.0" y2="36" stroke-width="0.9"/><line x1="273.5" y1="30" x2="273.5" y2="36" stroke-width="0.9"/><line x1="280.0" y1="30" x2="280.0" y2="46" stroke-width="2.2"/></g><g class="cifre" text-anchor="middle"><text x="30" y="21">600</text><text x="150" y="21">1000</text><text x="270" y="21">1400</text></g><rect class="ago" x="-1.5" y="6" width="3" height="52" rx="1.5"/></svg>
+        <p class="targa">Si parte da qui</p>
+        <h3>Onde AM</h3>
+        <p class="per">Le stazioni per tutti, dai bambini ai nonni.</p>
+        <ul><li><strong>Radio Merenda</strong><span>Parole semplici per i più piccoli</span></li><li><strong>Hit Parade</strong><span>I grandi classici per tutti</span></li><li><strong>Onde Cerebrali</strong><span>Concetti astratti e sfumati</span></li></ul>
+      </li>
+      <li class="banda fm">
+        <svg class="quadrante" viewBox="0 0 300 64" aria-hidden="true"><g class="tacche" stroke-linecap="round"><line x1="20.0" y1="30" x2="20.0" y2="46" stroke-width="2.2"/><line x1="26.5" y1="30" x2="26.5" y2="36" stroke-width="0.9"/><line x1="33.0" y1="30" x2="33.0" y2="36" stroke-width="0.9"/><line x1="39.5" y1="30" x2="39.5" y2="36" stroke-width="0.9"/><line x1="46.0" y1="30" x2="46.0" y2="36" stroke-width="0.9"/><line x1="52.5" y1="30" x2="52.5" y2="41" stroke-width="1.4"/><line x1="59.0" y1="30" x2="59.0" y2="36" stroke-width="0.9"/><line x1="65.5" y1="30" x2="65.5" y2="36" stroke-width="0.9"/><line x1="72.0" y1="30" x2="72.0" y2="36" stroke-width="0.9"/><line x1="78.5" y1="30" x2="78.5" y2="36" stroke-width="0.9"/><line x1="85.0" y1="30" x2="85.0" y2="46" stroke-width="2.2"/><line x1="91.5" y1="30" x2="91.5" y2="36" stroke-width="0.9"/><line x1="98.0" y1="30" x2="98.0" y2="36" stroke-width="0.9"/><line x1="104.5" y1="30" x2="104.5" y2="36" stroke-width="0.9"/><line x1="111.0" y1="30" x2="111.0" y2="36" stroke-width="0.9"/><line x1="117.5" y1="30" x2="117.5" y2="41" stroke-width="1.4"/><line x1="124.0" y1="30" x2="124.0" y2="36" stroke-width="0.9"/><line x1="130.5" y1="30" x2="130.5" y2="36" stroke-width="0.9"/><line x1="137.0" y1="30" x2="137.0" y2="36" stroke-width="0.9"/><line x1="143.5" y1="30" x2="143.5" y2="36" stroke-width="0.9"/><line x1="150.0" y1="30" x2="150.0" y2="46" stroke-width="2.2"/><line x1="156.5" y1="30" x2="156.5" y2="36" stroke-width="0.9"/><line x1="163.0" y1="30" x2="163.0" y2="36" stroke-width="0.9"/><line x1="169.5" y1="30" x2="169.5" y2="36" stroke-width="0.9"/><line x1="176.0" y1="30" x2="176.0" y2="36" stroke-width="0.9"/><line x1="182.5" y1="30" x2="182.5" y2="41" stroke-width="1.4"/><line x1="189.0" y1="30" x2="189.0" y2="36" stroke-width="0.9"/><line x1="195.5" y1="30" x2="195.5" y2="36" stroke-width="0.9"/><line x1="202.0" y1="30" x2="202.0" y2="36" stroke-width="0.9"/><line x1="208.5" y1="30" x2="208.5" y2="36" stroke-width="0.9"/><line x1="215.0" y1="30" x2="215.0" y2="46" stroke-width="2.2"/><line x1="221.5" y1="30" x2="221.5" y2="36" stroke-width="0.9"/><line x1="228.0" y1="30" x2="228.0" y2="36" stroke-width="0.9"/><line x1="234.5" y1="30" x2="234.5" y2="36" stroke-width="0.9"/><line x1="241.0" y1="30" x2="241.0" y2="36" stroke-width="0.9"/><line x1="247.5" y1="30" x2="247.5" y2="41" stroke-width="1.4"/><line x1="254.0" y1="30" x2="254.0" y2="36" stroke-width="0.9"/><line x1="260.5" y1="30" x2="260.5" y2="36" stroke-width="0.9"/><line x1="267.0" y1="30" x2="267.0" y2="36" stroke-width="0.9"/><line x1="273.5" y1="30" x2="273.5" y2="36" stroke-width="0.9"/><line x1="280.0" y1="30" x2="280.0" y2="46" stroke-width="2.2"/></g><g class="cifre" text-anchor="middle"><text x="30" y="21">88</text><text x="150" y="21">98</text><text x="270" y="21">108</text></g><rect class="ago" x="-1.5" y="6" width="3" height="52" rx="1.5"/></svg>
+        <p class="targa">Pacchetto FM</p>
+        <h3>Onde FM</h3>
+        <p class="per">Tre stazioni a tema per chi ha una passione.</p>
+        <ul><li><strong>Amarcord Radio</strong><span>Ricordi, tradizioni e mode</span></li><li><strong>8-Bit FM</strong><span>Videogiochi, fumetti e fantascienza</span></li><li><strong>Prima Visione</strong><span>Cinema, serie TV, musica e star</span></li></ul>
+      </li>
+      <li class="banda pirata">
+        <svg class="quadrante" viewBox="0 0 300 64" aria-hidden="true"><g class="tacche" stroke-linecap="round"><line x1="20.0" y1="30" x2="20.0" y2="46" stroke-width="2.2"/><line x1="26.5" y1="30" x2="26.5" y2="36" stroke-width="0.9"/><line x1="33.0" y1="30" x2="33.0" y2="36" stroke-width="0.9"/><line x1="39.5" y1="30" x2="39.5" y2="36" stroke-width="0.9"/><line x1="46.0" y1="30" x2="46.0" y2="36" stroke-width="0.9"/><line x1="52.5" y1="30" x2="52.5" y2="41" stroke-width="1.4"/><line x1="59.0" y1="30" x2="59.0" y2="36" stroke-width="0.9"/><line x1="65.5" y1="30" x2="65.5" y2="36" stroke-width="0.9"/><line x1="72.0" y1="30" x2="72.0" y2="36" stroke-width="0.9"/><line x1="78.5" y1="30" x2="78.5" y2="36" stroke-width="0.9"/><line x1="85.0" y1="30" x2="85.0" y2="46" stroke-width="2.2"/><line x1="91.5" y1="30" x2="91.5" y2="36" stroke-width="0.9"/><line x1="98.0" y1="30" x2="98.0" y2="36" stroke-width="0.9"/><line x1="104.5" y1="30" x2="104.5" y2="36" stroke-width="0.9"/><line x1="111.0" y1="30" x2="111.0" y2="36" stroke-width="0.9"/><line x1="117.5" y1="30" x2="117.5" y2="41" stroke-width="1.4"/><line x1="124.0" y1="30" x2="124.0" y2="36" stroke-width="0.9"/><line x1="130.5" y1="30" x2="130.5" y2="36" stroke-width="0.9"/><line x1="137.0" y1="30" x2="137.0" y2="36" stroke-width="0.9"/><line x1="143.5" y1="30" x2="143.5" y2="36" stroke-width="0.9"/><line x1="150.0" y1="30" x2="150.0" y2="46" stroke-width="2.2"/><line x1="156.5" y1="30" x2="156.5" y2="36" stroke-width="0.9"/><line x1="163.0" y1="30" x2="163.0" y2="36" stroke-width="0.9"/><line x1="169.5" y1="30" x2="169.5" y2="36" stroke-width="0.9"/><line x1="176.0" y1="30" x2="176.0" y2="36" stroke-width="0.9"/><line x1="182.5" y1="30" x2="182.5" y2="41" stroke-width="1.4"/><line x1="189.0" y1="30" x2="189.0" y2="36" stroke-width="0.9"/><line x1="195.5" y1="30" x2="195.5" y2="36" stroke-width="0.9"/><line x1="202.0" y1="30" x2="202.0" y2="36" stroke-width="0.9"/><line x1="208.5" y1="30" x2="208.5" y2="36" stroke-width="0.9"/><line x1="215.0" y1="30" x2="215.0" y2="46" stroke-width="2.2"/><line x1="221.5" y1="30" x2="221.5" y2="36" stroke-width="0.9"/><line x1="228.0" y1="30" x2="228.0" y2="36" stroke-width="0.9"/><line x1="234.5" y1="30" x2="234.5" y2="36" stroke-width="0.9"/><line x1="241.0" y1="30" x2="241.0" y2="36" stroke-width="0.9"/><line x1="247.5" y1="30" x2="247.5" y2="41" stroke-width="1.4"/><line x1="254.0" y1="30" x2="254.0" y2="36" stroke-width="0.9"/><line x1="260.5" y1="30" x2="260.5" y2="36" stroke-width="0.9"/><line x1="267.0" y1="30" x2="267.0" y2="36" stroke-width="0.9"/><line x1="273.5" y1="30" x2="273.5" y2="36" stroke-width="0.9"/><line x1="280.0" y1="30" x2="280.0" y2="46" stroke-width="2.2"/></g><g class="cifre" text-anchor="middle"><text x="30" y="21">6.2</text><text x="150" y="21">6.3</text><text x="270" y="21">6.4</text></g><rect class="ago" x="-1.5" y="6" width="3" height="52" rx="1.5"/></svg>
+        <p class="targa">Pacchetto Pirata · 18+</p>
+        <h3>Frequenze Pirata</h3>
+        <p class="per">Trasmissioni clandestine, solo per adulti.</p>
+        <ul><li><strong>Fuori Orario</strong><span>Lavoro, colleghi e dopo-lavoro</span></li><li><strong>Onda Nera</strong><span>Umorismo nero e macabro</span></li><li><strong>Dopo Mezzanotte</strong><span>Temi piccanti per adulti</span></li></ul>
+      </li>
     </ul>
     <p class="tenue misura" style="margin-top:26px">Ogni stazione ha la sua musica. Con lo Zapping la radio cambia stazione a ogni turno.</p>
   </div>
@@ -152,6 +192,6 @@
     <p class="fine">© 2026 Mergio Studios. Google Play è un marchio di Google LLC.</p>
   </div>
 </footer>
-<script src="/sito/sito.js?v=20261112e" defer></script>
+<script src="/sito/sito.js?v=20261112g" defer></script>
 </body>
 </html>

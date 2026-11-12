@@ -16,7 +16,7 @@
 <meta name="theme-color" content="#1B1433">
 <link rel="icon" type="image/png" sizes="32x32" href="/sintonizzati/icone/favicon-32.png">
 <link rel="preload" href="/sintonizzati/fonti/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="/sito/stile.css?v=20261112e">
+<link rel="stylesheet" href="/sito/stile.css?v=20261112g">
 </head>
 <body class="pagina-rana">
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -89,14 +89,19 @@
   <div class="dentro con-rana">
     <div style="display:grid;gap:24px">
       <h2 class="titolo" id="h-pacc">Un pacchetto per ogni serata</h2>
-      <ul class="pacchetti">
-        <li class="gratis">Base<small>Gratis, per cominciare</small></li>
-        <li>Natale<small>Per le feste</small></li>
-        <li>Nerd<small>Per appassionati</small></li>
-        <li>Matti<small>Domande assurde</small></li>
-        <li>Coppie &amp; Ex<small>Storie di cuore</small></li>
-        <li>Spicy 18+<small>Solo per maggiorenni</small></li>
-      </ul>
+      <div class="pacchetti">
+        <div class="pacchetto spicy">
+          <span class="fiamma"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.500 1.500c.600 3.200-1.400 5-3.100 7C7.800 10.300 6 12.300 6 15.300 6 19 8.800 22 12.300 22c3.400 0 6.200-2.800 6.200-6.400 0-2.300-1-4.100-2.200-5.500-.300 1.300-1 2.300-2 2.800.600-3.400-.200-8.200-1.800-11.400z"/></svg></span>
+          <div><h3>Spicy <span class="vietato">18+</span></h3><p>Argomenti hot, domande piccanti e zero filtri. Il pacchetto per le serate più bollenti, solo per maggiorenni.</p></div>
+        </div>
+        <ul>
+          <li class="pacchetto base"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.900 3.100 1.200-6.500L2.500 9.400l6.600-.900z"/></svg><strong>Base</strong><small>Gratis, per cominciare</small></li>
+          <li class="pacchetto natale"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 2.500v19M3.800 7.250l16.400 9.500M20.200 7.250L3.800 16.750M12 6l-2.200-2.200M12 6l2.200-2.200M12 18l-2.200 2.200M12 18l2.200 2.200"/></svg><strong>Natale</strong><small>Per le feste</small></li>
+          <li class="pacchetto nerd"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 6h10a5 5 0 0 1 5 5v2.500A4.500 4.500 0 0 1 17.500 18c-1.600 0-2.500-1-3.300-2h-4.400c-.800 1-1.700 2-3.300 2A4.500 4.500 0 0 1 2 13.500V11a5 5 0 0 1 5-5zm-.500 3.500v1.500H5v2h1.500v1.500h2V13H10v-2H8.500V9.500zM16 10a1.250 1.250 0 1 0 0 2.500A1.250 1.250 0 0 0 16 10zm2.500 2.500a1.250 1.250 0 1 0 0 2.500 1.250 1.250 0 0 0 0-2.500z"/></svg><strong>Nerd</strong><small>Per appassionati</small></li>
+          <li class="pacchetto matti"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.500 2L4.500 13.500h5.500L8.500 22l10-12.500h-5.800z"/></svg><strong>Matti</strong><small>Domande assurde</small></li>
+          <li class="pacchetto coppie"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8.500-5.300-8.500-11.500A4.800 4.800 0 0 1 12 6.400a4.800 4.800 0 0 1 8.500 3.100C20.500 15.700 12 21 12 21z"/><path fill="none" stroke="var(--carta-pacchetto)" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round" d="M12.600 6.800l-2 3.400 3 2.200-2.200 3.800"/></svg><strong>Coppie &amp; Ex</strong><small>Storie di cuore</small></li>
+        </ul>
+      </div>
       <p class="misura tenue">Con la modalità Guerra delle Rane ci si sfida a squadre. I pegni si possono giocare normali oppure, tra maggiorenni, in modalità Brindisi. Bevete responsabilmente.</p>
     </div>
     <img src="/sito/img/rana-brindisi.webp" width="440" height="395" loading="lazy" alt="La rana di Chi di Noi alza un calice.">
@@ -122,7 +127,6 @@
     <h2 class="titolone" id="h-fine" style="font-size:clamp(38px,6vw,76px)">Sputate il rospo.</h2>
     <div class="tasti">
       <a class="tasto rosa" data-negozio="chidinoi" aria-disabled="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.6v16.8c0 .8.9 1.3 1.6.9l14-8.4c.7-.4.7-1.4 0-1.8l-14-8.4C5.900 2.300 5 2.800 5 3.600z"/></svg><span>Presto su Google Play</span></a>
-      <a class="tasto vuoto" href="mailto:mergiostudios@gmail.com?subject=Chi%20di%20Noi">Scrivici per provarlo in anteprima</a>
     </div>
   </div>
 </section>
@@ -144,6 +148,6 @@
     <p class="fine">© 2026 Mergio Studios. Google Play è un marchio di Google LLC.</p>
   </div>
 </footer>
-<script src="/sito/sito.js?v=20261112e" defer></script>
+<script src="/sito/sito.js?v=20261112g" defer></script>
 </body>
 </html>
