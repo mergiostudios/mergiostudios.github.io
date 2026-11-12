@@ -15,7 +15,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0F2A30">
 <link rel="icon" type="image/png" sizes="32x32" href="/sintonizzati/icone/favicon-32.png">
-<link rel="stylesheet" href="/sito/stile.css?v=20261112d">
+<link rel="preload" href="/sintonizzati/fonti/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/sito/stile.css?v=20261112e">
 </head>
 <body class="pagina-radio">
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -45,8 +46,15 @@
     </div>
     <p class="indizio"><small>L’indizio del Conduttore</small><strong>Pizza con l’ananas</strong></p>
     <div class="apparecchio">
-      <svg viewBox="0 0 600 250" aria-hidden="true"></svg>
-      <input type="range" min="0" max="100" step="0.5" value="50" aria-label="Posizione della lancetta, dal primo estremo al secondo">
+      <div class="vetro">
+        <svg viewBox="0 0 600 250" aria-hidden="true"></svg>
+        <input type="range" min="0" max="100" step="0.5" value="50" aria-label="Posizione della lancetta, dal primo estremo al secondo">
+      </div>
+      <div class="comandi" aria-hidden="true">
+        <span class="altoparlante"></span>
+        <span class="display"><small>FM · MHz</small><b>98.0</b></span>
+        <span class="manopola"><i></i></span>
+      </div>
     </div>
     <div class="esito" aria-live="polite">
       <p>Trascinate la lancetta dove la mettereste voi.</p>
@@ -117,7 +125,8 @@
   </div>
 </section>
 
-<section class="sezione" aria-labelledby="h-fine">
+<section class="sezione chiusura" aria-labelledby="h-fine">
+  <div class="onde" aria-hidden="true"><svg viewBox="0 0 3600 120" width="3600" height="120"><path class="o1" d="M0 60 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0"/><path class="o2" d="M0 60 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0"/></svg></div>
   <div class="dentro" style="display:grid;gap:26px;justify-items:start">
     <h2 class="titolone" id="h-fine" style="font-size:clamp(38px,6vw,76px)">Spegnete la TV, accendete la radio.</h2>
     <div class="tasti">
@@ -143,6 +152,6 @@
     <p class="fine">© 2026 Mergio Studios. Google Play è un marchio di Google LLC.</p>
   </div>
 </footer>
-<script src="/sito/sito.js?v=20261112d" defer></script>
+<script src="/sito/sito.js?v=20261112e" defer></script>
 </body>
 </html>

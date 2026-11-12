@@ -50,14 +50,20 @@
     }
     var cifre = crea('g', { fill: '#6B4A00', 'font-family': 'Michroma, Verdana, sans-serif', 'font-size': 19, 'text-anchor': 'middle' });
     for (var f = 88; f <= 108; f += 4) crea('text', { x: xDi((f - 88) * 5), y: 58 }, cifre).textContent = f;
-    var lancetta = crea('g', { 'class': 'lancetta' });
-    crea('rect', { x: -5, y: 10, width: 10, height: 230, rx: 5, fill: '#FFF0C7' }, lancetta);
-    crea('rect', { x: -3, y: 12, width: 6, height: 226, rx: 3, fill: '#E5463A' }, lancetta);
-    crea('circle', { cx: 0, cy: 205, r: 15, fill: '#E5463A', stroke: '#FFF0C7', 'stroke-width': 4 }, lancetta);
+    var lancetta = crea('g', { 'class': 'lancetta' }), ago = crea('g', { 'class': 'lancetta-dentro' }, lancetta);
+    crea('rect', { x: -5, y: 10, width: 10, height: 230, rx: 5, fill: '#FFF0C7' }, ago);
+    crea('rect', { x: -3, y: 12, width: 6, height: 226, rx: 3, fill: '#E5463A' }, ago);
+    crea('circle', { cx: 0, cy: 205, r: 15, fill: '#E5463A', stroke: '#FFF0C7', 'stroke-width': 4 }, ago);
+    var cifreDisplay = prova.querySelector('.display b'), manopola = prova.querySelector('.manopola');
 
     var quale = 0;
     var testo = function (sel, t) { prova.querySelector(sel).textContent = t; };
-    var muovi = function () { lancetta.setAttribute('transform', 'translate(' + xDi(+cursore.value) + ' 0)'); };
+    var muovi = function () {
+      var v = +cursore.value;
+      lancetta.setAttribute('transform', 'translate(' + xDi(v) + ' 0)');
+      if (cifreDisplay) cifreDisplay.textContent = (88 + v / 5).toFixed(1);          // la frequenza sul display
+      if (manopola) manopola.style.transform = 'rotate(' + (v - 50) * 2.7 + 'deg)';   // la manopola gira con la lancetta
+    };
     var tastoRivela = prova.querySelector('.rivela'), tastoAltra = prova.querySelector('.altra');
 
     function mostraCarta() {
@@ -76,7 +82,7 @@
       testo('.esito p', 'Trascinate la lancetta dove la mettereste voi.');
       tastoRivela.hidden = false; tastoAltra.hidden = true;
     }
-    cursore.addEventListener('input', muovi);
+    cursore.addEventListener('input', function () { prova.classList.add('toccata'); muovi(); });
     tastoRivela.addEventListener('click', function () {
       var c = CARTE[quale], distanza = Math.abs(+cursore.value - c.centro), punti = 0;
       for (var k = 0; k < 5; k++) if (distanza <= MEZZE[k]) { punti = 5 - k; break; }
@@ -104,8 +110,14 @@
       '…ha più schede aperte sul telefono in questo momento?'
     ];
     var n = 0, dove = domanda.querySelector('.testo');
+    var fermo = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     domanda.querySelector('button').addEventListener('click', function () {
-      n = (n + 1) % DOMANDE.length; dove.textContent = DOMANDE[n];
+      n = (n + 1) % DOMANDE.length;
+      if (fermo) { dove.textContent = DOMANDE[n]; return; }
+      // la carta si gira: il testo cambia a metà giro, quando è di taglio
+      domanda.classList.remove('gira'); void domanda.offsetWidth; domanda.classList.add('gira');
+      setTimeout(function () { dove.textContent = DOMANDE[n]; }, 190);
     });
+    domanda.addEventListener('animationend', function (e) { if (e.target === domanda) domanda.classList.remove('gira'); });
   }
 })();

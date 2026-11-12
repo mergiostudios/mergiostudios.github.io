@@ -82,6 +82,7 @@ a { color: inherit; }
 .tasto.rosa { background: var(--rosa); color: #2A0A1C; box-shadow: 0 5px 0 #B02A72; }
 .tasto.rosa:hover { box-shadow: 0 6px 0 #B02A72; }
 .tasto.rosa:active { box-shadow: 0 1px 0 #B02A72; }
+.tasto.notte { background: var(--notte); box-shadow: 0 5px 0 rgba(27, 20, 51, .35); }
 .tasto.vuoto { background: transparent; color: inherit; box-shadow: inset 0 0 0 2px currentColor; }
 .tasto.vuoto:hover, .tasto.vuoto:active { box-shadow: inset 0 0 0 2px currentColor; }
 .tasto[aria-disabled="true"] { cursor: default; opacity: .78; box-shadow: inset 0 0 0 2px currentColor; background: transparent; color: inherit; transform: none; }
@@ -198,9 +199,22 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .indizio small { font-size: 14px; font-weight: 600; }
 .indizio strong { font: 400 clamp(16px, 2vw, 21px)/1.25 var(--radio-font); }
 .apparecchio { position: relative; background: #D5DEDE; border-radius: 22px; padding: 12px; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8); }
-.apparecchio svg { width: 100%; height: auto; border-radius: 12px; touch-action: none; }
-.apparecchio input[type="range"] { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); margin: 0; opacity: 0; cursor: ew-resize; }
+.apparecchio .vetro { position: relative; }
+.apparecchio svg { width: 100%; height: auto; border-radius: 12px; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .25); }
+.apparecchio input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; touch-action: pan-y; }
 .apparecchio:has(input:focus-visible) { outline: 3px solid var(--ambra); outline-offset: 3px; }
+.comandi { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; margin-top: 12px; }
+.altoparlante { height: 58px; border-radius: 10px; background: radial-gradient(circle, #10292F 1.6px, transparent 2.2px) 0 0 / 9px 9px, #8FA3A3; box-shadow: inset 0 0 0 2px rgba(16, 41, 47, .35); }
+.display { display: grid; align-content: center; justify-items: end; gap: 2px; height: 58px; min-width: 132px; padding: 6px 14px; border-radius: 10px; background: var(--vetro); color: var(--segni); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35); font-family: var(--radio-font); }
+.display small { font-size: 9.5px; letter-spacing: .06em; opacity: .8; }
+.display b { font-weight: 400; font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; }
+.manopola { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: start center; background: radial-gradient(circle at 35% 30%, #FFFFFF, #C9D3D3 60%, #9FB0B0); box-shadow: 0 0 0 4px #10292F, 0 0 0 6px #8FA3A3, 0 4px 8px rgba(0, 0, 0, .4); transition: transform .08s linear; }
+.manopola i { width: 5px; height: 16px; margin-top: 5px; border-radius: 3px; background: var(--ambra); box-shadow: 0 0 6px var(--ambra); }
+/* finché nessuno la tocca, la lancetta oscilla appena: invita a trascinarla */
+.prova:not(.toccata):not(.rivelata) .lancetta-dentro { animation: invito 2.8s ease-in-out infinite; }
+@keyframes invito { 0%, 55%, 100% { transform: translateX(0); } 65% { transform: translateX(-9px); } 80% { transform: translateX(9px); } 90% { transform: translateX(-3px); } }
+.prova.rivelata .esito p { animation: timbro .45s cubic-bezier(.3, 1.6, .5, 1); transform-origin: left center; }
+@keyframes timbro { from { transform: scale(.82); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .prova .lancetta { transition: transform .08s linear; }
 /* il segnale compare con una dissolvenza ma sparisce di colpo: con un'altra radiocassetta non si deve intravedere la nuova soluzione */
 .prova .segnale { opacity: 0; transition: none; }
@@ -238,6 +252,7 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .domanda .chi { font-weight: 800; font-size: 20px; color: #B02A72; }
 .domanda .testo { font-weight: 800; font-size: clamp(26px, 3.6vw, 42px); line-height: 1.08; letter-spacing: -.02em; min-height: 3.3em; text-wrap: balance; }
 .domanda .regola { font-size: 17px; }
+.domanda { margin-top: 56px; }
 .domanda img { position: absolute; right: 8px; top: -62px; width: clamp(96px, 13vw, 140px); transform: rotate(8deg); }
 .fascia-lavanda { background: var(--lavanda); color: var(--notte); --riga: rgba(27, 20, 51, .2); }
 .fascia-lavanda .tenue { color: #5B4F7A; }
@@ -286,3 +301,59 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .contatti-mail { display: grid; gap: 10px; justify-items: start; padding-top: clamp(24px, 3vw, 36px); border-top: 1.5px solid var(--riga); }
 .contatti-mail .indirizzo { font-weight: 800; font-size: clamp(26px, 4.6vw, 52px); line-height: 1.05; letter-spacing: -.02em; text-decoration: none; overflow-wrap: anywhere; border-bottom: 4px solid var(--ambra); }
 .contatti-mail .indirizzo:hover { border-bottom-color: var(--corallo); }
+
+/* ---------- onde: il motivo di Sintonizzati, due sinusoidi che scorrono piano ---------- */
+.onde { overflow: hidden; height: 120px; margin-block: -34px -52px; position: relative; z-index: 1; pointer-events: none; }
+.onde svg { display: block; max-width: none; width: 3600px; height: 120px; }
+.onde path { fill: none; stroke-width: 6; stroke-linecap: round; opacity: .75; }
+.onde .o1 { stroke: var(--ambra); animation: scorre-1 22s linear infinite; }
+.onde .o2 { stroke: var(--corallo); animation: scorre-2 15s linear infinite; }
+@keyframes scorre-1 { to { transform: translateX(-480px); } }
+@keyframes scorre-2 { to { transform: translateX(-360px); } }
+.chiusura { position: relative; overflow: hidden; }
+.chiusura .onde { position: absolute; left: 0; right: 0; bottom: 18px; margin: 0; opacity: .5; z-index: 0; }
+.chiusura .dentro { position: relative; z-index: 1; padding-bottom: 70px; }
+
+/* ---------- home: i mondi si impilano come carte ---------- */
+.mondo, .dopo-mondi { --tondo: clamp(26px, 5vw, 60px); position: relative; border-radius: var(--tondo) var(--tondo) 0 0; }
+.mondo { padding-bottom: calc(clamp(48px, 8vw, 104px) + var(--tondo)); }
+.mondo-rana, .dopo-mondi { margin-top: calc(-1 * var(--tondo)); }
+.dopo-mondi { background: var(--carta); }
+.tavolo { filter: drop-shadow(0 26px 30px rgba(16, 41, 47, .18)); }
+
+/* ---------- pagine dei giochi: le fasce chiare sono pannelli arrotondati ---------- */
+.fascia-chiara, .fascia-lavanda { border-radius: clamp(26px, 5vw, 60px); margin-inline: clamp(8px, 1.6vw, 22px); }
+.bande h3::before { animation: spia 2.4s ease-in-out infinite; }
+.bande li:nth-child(2) h3::before { animation-delay: .8s; } .bande li:nth-child(3) h3::before { animation-delay: 1.6s; }
+@keyframes spia { 50% { opacity: .45; } }
+
+/* ---------- Chi di Noi: rane che dondolano, carta che si gira, pacchetti un po' storti ---------- */
+.scena-rana .rana, .scena-rana .logo, .con-rana > img, .rana-fine { animation: dondola 3.4s ease-in-out infinite alternate; }
+.scena-rana .rana.a { animation-delay: -1.2s; } .scena-rana .rana.b { animation-delay: -2.3s; animation-duration: 2.9s; }
+@keyframes dondola { from { translate: 0 5px; } to { translate: 0 -7px; } }
+.domanda { transform-origin: center; }
+.domanda.gira { animation: gira .38s ease-in-out; }
+@keyframes gira { 50% { transform: perspective(900px) rotateX(88deg) scale(.96); } }
+.domanda.gira img { animation: salta .38s ease-out; }
+@keyframes salta { 40% { translate: 0 -26px; rotate: -10deg; } }
+.pacchetti li:nth-child(odd) { rotate: -1.6deg; } .pacchetti li:nth-child(even) { rotate: 1.4deg; }
+.pacchetti li { transition: rotate .2s, translate .2s; } .pacchetti li:hover { rotate: 0deg; translate: 0 -3px; }
+.chiusura-rana { position: relative; overflow: hidden; }
+.rana-fine { position: absolute; right: clamp(-10px, 6vw, 110px); bottom: -34px; width: clamp(120px, 20vw, 250px); rotate: -6deg; }
+@media (max-width: 700px) { .chiusura-rana { padding-bottom: 150px; } }
+
+/* ---------- pagina non trovata ---------- */
+.persa { display: grid; gap: 22px; justify-items: start; padding-block: clamp(28px, 6vw, 72px) clamp(40px, 7vw, 80px); }
+.display-grande { display: grid; justify-items: end; gap: 4px; padding: 14px 24px; border-radius: 16px; background: var(--vetro); color: var(--segni); box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .35); font-family: var(--radio-font); }
+.display-grande small { font-size: 12px; letter-spacing: .06em; } .display-grande b { font-weight: 400; font-size: clamp(54px, 10vw, 96px); line-height: 1; }
+
+/* passaggio morbido da una pagina all'altra, dove il browser lo sa fare */
+@view-transition { navigation: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .onde path, .scena-rana .rana, .scena-rana .logo, .con-rana > img, .rana-fine, .bande h3::before, .domanda.gira, .domanda.gira img,
+  .prova .lancetta-dentro, .prova.rivelata .esito p { animation: none !important; }
+  .manopola, .pacchetti li { transition: none; }
+}
+.galleria { margin-bottom: clamp(20px, 3vw, 40px); }
+.persa + .onde { margin-bottom: 0; }

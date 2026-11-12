@@ -15,7 +15,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#EEF2EF">
 <link rel="icon" type="image/png" sizes="32x32" href="/sintonizzati/icone/favicon-32.png">
-<link rel="stylesheet" href="/sito/stile.css?v=20261112d">
+<link rel="preload" href="/sintonizzati/fonti/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/sito/stile.css?v=20261112e">
 </head>
 <body class="">
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -40,12 +41,12 @@
   <svg class="tavolo" viewBox="0 0 400 400" role="img" aria-label="Un tavolo visto dall'alto: sei giocatori si passano un telefono">
   <circle cx="200" cy="200" r="118" fill="#10292F"/>
   <circle cx="200" cy="200" r="118" fill="none" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="2" stroke-dasharray="3 9"/>
-  <circle class="posto p1" cx="200" cy="36" r="30" fill="#FFB52E"/>
-  <circle class="posto p2" cx="342" cy="118" r="30" fill="#FF5FB2"/>
-  <circle class="posto p3" cx="342" cy="282" r="30" fill="#3FC290"/>
-  <circle class="posto p4" cx="200" cy="364" r="30" fill="#FF5A47"/>
-  <circle class="posto p5" cx="58" cy="282" r="30" fill="#C8F53C"/>
-  <circle class="posto p6" cx="58" cy="118" r="30" fill="#8B6CE8"/>
+  <g class="posto p1"><circle cx="200" cy="36" r="30" fill="#FFB52E"/><ellipse cx="209.0" cy="45.0" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="191.0" cy="45.0" rx="4.2" ry="5.4" fill="#10292F"/></g>
+  <g class="posto p2"><circle cx="342" cy="118" r="30" fill="#FF5FB2"/><ellipse cx="338.7" cy="130.3" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="329.7" cy="114.7" rx="4.2" ry="5.4" fill="#10292F"/></g>
+  <g class="posto p3"><circle cx="342" cy="282" r="30" fill="#3FC290"/><ellipse cx="329.7" cy="285.3" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="338.7" cy="269.7" rx="4.2" ry="5.4" fill="#10292F"/></g>
+  <g class="posto p4"><circle cx="200" cy="364" r="30" fill="#FF5A47"/><ellipse cx="191.0" cy="355.0" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="209.0" cy="355.0" rx="4.2" ry="5.4" fill="#10292F"/></g>
+  <g class="posto p5"><circle cx="58" cy="282" r="30" fill="#C8F53C"/><ellipse cx="61.3" cy="269.7" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="70.3" cy="285.3" rx="4.2" ry="5.4" fill="#10292F"/></g>
+  <g class="posto p6"><circle cx="58" cy="118" r="30" fill="#8B6CE8"/><ellipse cx="70.3" cy="114.7" rx="4.2" ry="5.4" fill="#10292F"/><ellipse cx="61.3" cy="130.3" rx="4.2" ry="5.4" fill="#10292F"/></g>
   <g class="telefono">
     <rect x="174" y="98" width="52" height="96" rx="11" fill="#FFF0C7"/>
     <rect x="180" y="106" width="40" height="72" rx="5" fill="#183A42"/>
@@ -54,6 +55,7 @@
   </g>
 </svg>
 </section>
+<div class="onde" aria-hidden="true"><svg viewBox="0 0 3600 120" width="3600" height="120"><path class="o1" d="M0 60 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0 q120.0 -34 240.0 0 t240.0 0"/><path class="o2" d="M0 60 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0 q90.0 -26 180.0 0 t180.0 0"/></svg></div>
 
 <section class="mondo mondo-radio" aria-labelledby="h-sint">
   <div class="dentro griglia">
@@ -88,7 +90,7 @@
   </div>
 </section>
 
-<section class="sezione" aria-labelledby="h-come">
+<section class="sezione dopo-mondi" aria-labelledby="h-come">
   <div class="dentro">
     <h2 class="titolo" id="h-come">Come sono fatti i nostri giochi</h2>
     <ul class="elenco-righe">
@@ -117,6 +119,6 @@
     <p class="fine">© 2026 Mergio Studios. Google Play è un marchio di Google LLC.</p>
   </div>
 </footer>
-<script src="/sito/sito.js?v=20261112d" defer></script>
+<script src="/sito/sito.js?v=20261112e" defer></script>
 </body>
 </html>
