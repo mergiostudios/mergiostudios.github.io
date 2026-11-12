@@ -202,8 +202,9 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .apparecchio input[type="range"] { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); margin: 0; opacity: 0; cursor: ew-resize; }
 .apparecchio:has(input:focus-visible) { outline: 3px solid var(--ambra); outline-offset: 3px; }
 .prova .lancetta { transition: transform .08s linear; }
-.prova .segnale { opacity: 0; transition: opacity .5s; }
-.prova.rivelata .segnale { opacity: 1; }
+/* il segnale compare con una dissolvenza ma sparisce di colpo: con un'altra radiocassetta non si deve intravedere la nuova soluzione */
+.prova .segnale { opacity: 0; transition: none; }
+.prova.rivelata .segnale { opacity: 1; transition: opacity .5s; }
 .prova.rivelata input { pointer-events: none; }
 .esito { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; }
 .esito p { font-weight: 800; font-size: 20px; line-height: 1.25; }
