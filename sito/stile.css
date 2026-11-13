@@ -411,11 +411,32 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .modo.impostore { background: #2A1215; } .modo.impostore .quanti { color: #FF9C8F; } .modo.impostore .frase { color: #FF8474; }
 .modo.impostore .scena { background: radial-gradient(90% 120% at 50% 110%, rgba(255, 90, 71, .45), transparent 70%), #1C0B0D; }
 .facce { display: flex; gap: clamp(6px, 1.2vw, 12px); }
-.faccia { width: clamp(30px, 4.4vw, 42px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 34% 44%, #10292F 0 11%, transparent 12%), radial-gradient(circle at 66% 44%, #10292F 0 11%, transparent 12%), var(--tinta); }
+/* ogni faccia: due occhi tondi (::before e ::after) che sbattono le palpebre ogni tanto */
+.faccia { --guarda: 0; position: relative; width: clamp(30px, 4.4vw, 42px); aspect-ratio: 1; border-radius: 50%; background-color: var(--tinta); }
+.faccia::before, .faccia::after { content: ""; position: absolute; top: 36%; width: 19%; height: 19%; border-radius: 50%; background: #10292F;
+  animation: sbatte 6s linear infinite, gira-occhi 6s ease-in-out infinite; }
+.faccia::before { left: 25%; } .faccia::after { right: 25%; }
+/* nel momento in cui l'impostore si scopre, gli altri si girano a guardarlo */
+.faccia:nth-child(-n+4) { --guarda: 1; } .faccia:nth-child(n+6) { --guarda: -1; }
+.faccia:nth-child(2)::before, .faccia:nth-child(2)::after { animation-delay: -1.3s, 0s; }
+.faccia:nth-child(4)::before, .faccia:nth-child(4)::after { animation-delay: -2.6s, 0s; }
+.faccia:nth-child(7)::before, .faccia:nth-child(7)::after { animation-delay: -.7s, 0s; }
+@keyframes sbatte { 0%, 20%, 23.5%, 100% { scale: 1 1; } 21.7% { scale: 1.1 .12; } }
+@keyframes gira-occhi { 0%, 56%, 92%, 100% { translate: 0 0; } 61%, 87% { translate: calc(var(--guarda) * 50%) 0; } }
+/* l'impostore: diventa rosso, si alza e stringe gli occhi in due fessure inclinate, lanciando occhiate a destra e a sinistra */
 .faccia.spia { animation: tradisce 6s ease-in-out infinite; }
+.faccia.spia::before, .faccia.spia::after { animation: losco 6s ease-in-out infinite; }
+.faccia.spia::before { --verso: 1; } .faccia.spia::after { --verso: -1; }
 @keyframes tradisce {
-  0%, 52%, 100% { background: radial-gradient(circle at 34% 44%, #10292F 0 11%, transparent 12%), radial-gradient(circle at 66% 44%, #10292F 0 11%, transparent 12%), var(--tinta); box-shadow: none; transform: none; }
-  60%, 88% { background: radial-gradient(ellipse at 28% 46%, #1C0B0D 0 9%, transparent 10%), radial-gradient(ellipse at 56% 46%, #1C0B0D 0 9%, transparent 10%), #FF5A47; box-shadow: 0 0 0 4px rgba(255, 90, 71, .35), 0 0 26px #FF5A47; transform: translateY(-6px) scale(1.12); }
+  0%, 52%, 96%, 100% { background-color: var(--tinta); box-shadow: 0 0 0 0 rgba(255, 90, 71, 0); transform: none; }
+  60%, 88% { background-color: #FF5A47; box-shadow: 0 0 0 4px rgba(255, 90, 71, .35), 0 0 26px #FF5A47; transform: translateY(-6px) scale(1.12); }
+}
+@keyframes losco {
+  0%, 53%, 95%, 100% { scale: 1 1; rotate: 0deg; translate: 0 0; border-radius: 50%; }
+  60% { scale: 1.25 .5; rotate: calc(var(--verso) * 16deg); translate: 0 18%; border-radius: 40%; }
+  67%, 71% { scale: 1.25 .5; rotate: calc(var(--verso) * 16deg); translate: -45% 18%; border-radius: 40%; }
+  78%, 82% { scale: 1.25 .5; rotate: calc(var(--verso) * 16deg); translate: 45% 18%; border-radius: 40%; }
+  88% { scale: 1.25 .5; rotate: calc(var(--verso) * 16deg); translate: 0 18%; border-radius: 40%; }
 }
 @media (max-width: 760px) { .modi { grid-template-columns: 1fr; } }
 
@@ -449,7 +470,7 @@ details p { padding: 0 0 20px; max-width: 40em; }
 @media (max-width: 900px) { .frequenze { grid-template-columns: 1fr; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .pallini i, .livello, .faccia.spia, .quadrante .ago, .banda.pirata::after, .banda.pirata h3 { animation: none !important; }
+  .pallini i, .livello, .faccia.spia, .faccia::before, .faccia::after, .quadrante .ago, .banda.pirata::after, .banda.pirata h3 { animation: none !important; }
   .pallini i { background: #7FE3BD; } .quadrante .ago { transform: translateX(150px); }
 }
 .banda .per { min-height: 2.7em; }
