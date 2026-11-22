@@ -102,7 +102,7 @@
   var domanda = document.querySelector('.domanda');
   if (domanda) {
     var DOMANDE = [
-      '…risponderebbe a un messaggio dopo tre giorni con «scusa, visto ora»?',
+      '…lascerebbe un messaggio in «visto» per tre giorni?',
       '…sopravviverebbe meno a lungo in un film horror?',
       '…mangerebbe l’ultima fetta di pizza senza chiedere?',
       '…scoppierebbe a ridere nel momento meno adatto?',

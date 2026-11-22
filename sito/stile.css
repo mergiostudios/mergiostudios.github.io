@@ -482,6 +482,6 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .contatti-logo { flex: none; width: clamp(96px, 13vw, 168px); height: auto; border-radius: 22%; box-shadow: 0 10px 0 rgba(16, 41, 47, .14); }
 @media (max-width: 640px) { .contatti-testa { flex-direction: column; align-items: flex-start; } }
 @media (prefers-reduced-motion: no-preference) {
-  .contatti-logo { animation: logo-entra .7s cubic-bezier(.2, .8, .2, 1.2) both; }
-  @keyframes logo-entra { from { opacity: 0; transform: rotate(-8deg) scale(.85); } }
+  .contatti-logo { animation: logo-entra 1.5s cubic-bezier(.3, 1.35, .45, 1) .35s both; }
+  @keyframes logo-entra { 0% { opacity: 0; transform: rotate(-16deg) scale(.6); } 35% { opacity: 1; } }
 }
