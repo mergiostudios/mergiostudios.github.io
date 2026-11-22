@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><rect width="1024" height="1024" rx="232" fill="#10292F"/><circle cx="512" cy="512" r="300.0" fill="#1A4049"/>
+<circle cx="512" cy="512" r="262.0" fill="none" stroke="#2A5A63" stroke-width="5.0" opacity=".9"/>
+<circle cx="512.0" cy="156.0" r="74.0" fill="#FFB52E"/>
+<circle cx="535.0" cy="172.0" r="11.5" fill="#10292F"/>
+<circle cx="489.0" cy="172.0" r="11.5" fill="#10292F"/>
+<circle cx="820.3" cy="334.0" r="74.0" fill="#FF5FB2"/>
+<circle cx="817.9" cy="361.9" r="11.5" fill="#10292F"/>
+<circle cx="794.9" cy="322.1" r="11.5" fill="#10292F"/>
+<circle cx="820.3" cy="690.0" r="74.0" fill="#3FC290"/>
+<circle cx="794.9" cy="701.9" r="11.5" fill="#10292F"/>
+<circle cx="817.9" cy="662.1" r="11.5" fill="#10292F"/>
+<circle cx="512.0" cy="868.0" r="74.0" fill="#B9A6FF"/>
+<circle cx="489.0" cy="852.0" r="11.5" fill="#10292F"/>
+<circle cx="535.0" cy="852.0" r="11.5" fill="#10292F"/>
+<circle cx="203.7" cy="690.0" r="74.0" fill="#FF5A47"/>
+<circle cx="206.1" cy="662.1" r="11.5" fill="#10292F"/>
+<circle cx="229.1" cy="701.9" r="11.5" fill="#10292F"/>
+<circle cx="203.7" cy="334.0" r="74.0" fill="#C8F53C"/>
+<circle cx="229.1" cy="322.1" r="11.5" fill="#10292F"/>
+<circle cx="206.1" cy="361.9" r="11.5" fill="#10292F"/>
+<g transform="rotate(-14 512 512)">
+<rect x="410.0" y="342.0" width="204.0" height="340.0" rx="38.0" fill="#FFF0C7"/>
+<rect x="427.0" y="376.0" width="170.0" height="272.0" rx="18.0" fill="#10292F"/>
+<rect x="492.0" y="354.0" width="40.0" height="8.0" rx="4.0" fill="#10292F" opacity=".55"/>
+<rect x="450.0" y="461.0" width="124.0" height="22.0" rx="11.0" fill="#FFB52E"/>
+<rect x="450.0" y="501.0" width="124.0" height="22.0" rx="11.0" fill="#FF5A47"/>
+<rect x="450.0" y="541.0" width="124.0" height="22.0" rx="11.0" fill="#3FC290"/>
+</g></svg>

@@ -476,3 +476,12 @@ details p { padding: 0 0 20px; max-width: 40em; }
 .banda .per { min-height: 2.7em; }
 .banda.fm .ago { fill: var(--ambra); } .banda.pirata .ago { fill: #FFFFFF; }
 @media (max-width: 900px) { .banda .per { min-height: 0; } }
+
+/* Contatti: il logo dello studio accanto al saluto (sotto i 640px va sopra) */
+.contatti-testa { display: flex; align-items: center; gap: clamp(20px, 3.4vw, 40px); }
+.contatti-logo { flex: none; width: clamp(96px, 13vw, 168px); height: auto; border-radius: 22%; box-shadow: 0 10px 0 rgba(16, 41, 47, .14); }
+@media (max-width: 640px) { .contatti-testa { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: no-preference) {
+  .contatti-logo { animation: logo-entra .7s cubic-bezier(.2, .8, .2, 1.2) both; }
+  @keyframes logo-entra { from { opacity: 0; transform: rotate(-8deg) scale(.85); } }
+}
